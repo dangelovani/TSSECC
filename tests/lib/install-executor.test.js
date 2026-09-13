@@ -664,6 +664,126 @@ function runTests() {
     }
   })) passed++; else failed++;
 
+  if (test('OpenCode upgrade replaces unchanged managed TypeScript runtime sources with compiled JavaScript', () => {
+    const tempDir = createTempDir('install-executor-opencode-runtime-upgrade-');
+    try {
+      const targetRoot = path.join(tempDir, 'config', 'opencode');
+      const installStatePath = path.join(targetRoot, 'ecc-install-state.json');
+      const sourceRoot = path.join(tempDir, 'source');
+      const oldToolPath = writeFile(targetRoot, path.join('tools', 'index.ts'), 'export * from "./run-tests.js"\n');
+      const oldPluginPath = writeFile(targetRoot, path.join('plugins', 'index.ts'), 'export * from "./ecc-hooks.js"\n');
+      const stalePluginPath = writeFile(targetRoot, path.join('plugins', 'retired.js'), 'export default {}\n');
+      const currentPluginPath = writeFile(targetRoot, path.join('plugins', 'index.js'), 'export default { old: true }\n');
+      const unrelatedPluginPath = writeFile(targetRoot, path.join('plugins', 'unrelated.js'), 'export default {}\n');
+      const newToolSource = writeFile(sourceRoot, path.join('dist', 'tools', 'index.js'), 'export const tool = true\n');
+      const newPluginSource = writeFile(sourceRoot, path.join('dist', 'plugins', 'index.js'), 'export default {}\n');
+      const digest = filePath => crypto.createHash('sha256').update(fs.readFileSync(filePath)).digest('hex');
+      const metadata = {
+        schemaVersion: 'ecc.install.v1',
+        installedAt: new Date().toISOString(),
+        target: { id: 'opencode-home', target: 'opencode', kind: 'home', root: targetRoot, installStatePath },
+        request: { profile: 'opencode', modules: [], includeComponents: [], excludeComponents: [], legacyLanguages: [], legacyMode: false },
+        resolution: { selectedModules: ['platform-configs'], skippedModules: [] },
+        source: { repoVersion: '2.2.1', repoCommit: null, manifestVersion: 1 },
+      };
+      const oldOperations = [
+        { sourceRelativePath: '.opencode/tools/index.ts', destinationPath: oldToolPath },
+        { sourceRelativePath: '.opencode/plugins/index.ts', destinationPath: oldPluginPath },
+        { sourceRelativePath: '.opencode/dist/plugins/retired.js', destinationPath: stalePluginPath },
+        { sourceRelativePath: '.opencode/dist/plugins/index.js', destinationPath: currentPluginPath },
+        { sourceRelativePath: '.opencode/plugins/unrelated.js', destinationPath: unrelatedPluginPath },
+      ].map(operation => ({
+        kind: 'copy-file', moduleId: 'platform-configs', strategy: 'sync-root-children',
+        ownership: 'managed', scaffoldOnly: false, contentSha256: digest(operation.destinationPath), ...operation,
+      }));
+      writeJson(targetRoot, 'ecc-install-state.json', { ...metadata, operations: oldOperations });
+
+      const operations = [
+        { sourcePath: newToolSource, sourceRelativePath: '.opencode/dist/tools/index.js', destinationPath: path.join(targetRoot, 'tools', 'index.js') },
+        { sourcePath: newPluginSource, sourceRelativePath: '.opencode/dist/plugins/index.js', destinationPath: path.join(targetRoot, 'plugins', 'index.js') },
+      ].map(operation => ({
+        kind: 'copy-file', moduleId: 'platform-configs', strategy: 'sync-root-children',
+        ownership: 'managed', scaffoldOnly: false, ...operation,
+      }));
+      const plan = {
+        adapter: { id: 'opencode-home', target: 'opencode', kind: 'home' },
+        installStatePath,
+        operations,
+        statePreview: {
+          ...metadata,
+          operations: operations.map(({ sourcePath: _sourcePath, ...operation }) => operation),
+        },
+        target: 'opencode',
+        targetRoot,
+        warnings: [],
+      };
+
+      const unverifiableOldOperations = oldOperations.map((operation, index) => {
+        if (index !== 0) {
+          return { ...operation };
+        }
+        const { contentSha256: _contentSha256, ...unverifiableOperation } = operation;
+        return unverifiableOperation;
+      });
+      writeJson(targetRoot, 'ecc-install-state.json', { ...metadata, operations: unverifiableOldOperations });
+      assert.throws(
+        () => applyInstallPlanDirect(plan),
+        /Refusing to remove unverifiable managed OpenCode runtime source/
+      );
+      assert.ok(!fs.existsSync(path.join(targetRoot, 'tools', 'index.js')),
+        'Should fail before writing the replacement runtime when a managed source has no digest');
+      writeJson(targetRoot, 'ecc-install-state.json', { ...metadata, operations: oldOperations });
+
+      fs.rmSync(oldToolPath);
+      fs.mkdirSync(oldToolPath);
+      assert.throws(
+        () => applyInstallPlanDirect(plan),
+        /Refusing to migrate non-file OpenCode runtime source/
+      );
+      assert.ok(!fs.existsSync(path.join(targetRoot, 'tools', 'index.js')),
+        'Should fail before writing the replacement runtime when a managed source is not a file');
+      fs.rmSync(oldToolPath, { recursive: true });
+      fs.writeFileSync(oldToolPath, 'export * from "./run-tests.js"\n');
+
+      fs.writeFileSync(oldToolPath, '// user modification\n');
+      assert.throws(
+        () => applyInstallPlanDirect(plan),
+        /Refusing to remove modified managed OpenCode runtime source/
+      );
+      assert.ok(!fs.existsSync(path.join(targetRoot, 'tools', 'index.js')),
+        'Should fail before writing the replacement runtime when a managed source was modified');
+      fs.writeFileSync(oldToolPath, 'export * from "./run-tests.js"\n');
+
+      fs.writeFileSync(stalePluginPath, '// user modification\n');
+      assert.throws(
+        () => applyInstallPlanDirect(plan),
+        /Refusing to remove modified managed OpenCode runtime source/
+      );
+      assert.ok(!fs.existsSync(path.join(targetRoot, 'tools', 'index.js')),
+        'Should fail before writing replacements when a retired compiled plugin was modified');
+      fs.writeFileSync(stalePluginPath, 'export default {}\n');
+
+      applyInstallPlanDirect(plan);
+
+      assert.ok(!fs.existsSync(oldToolPath), 'Should remove the previously managed tools/index.ts');
+      assert.ok(!fs.existsSync(oldPluginPath), 'Should remove the previously managed plugins/index.ts');
+      assert.ok(!fs.existsSync(stalePluginPath), 'Should remove a retired managed compiled plugin');
+      assert.ok(fs.existsSync(unrelatedPluginPath), 'Should not remove JavaScript not recorded from dist');
+      assert.ok(fs.existsSync(path.join(targetRoot, 'tools', 'index.js')));
+      assert.ok(fs.existsSync(path.join(targetRoot, 'plugins', 'index.js')));
+      assert.strictEqual(fs.readFileSync(currentPluginPath, 'utf8'), 'export default {}\n',
+        'Should update a compiled plugin still present in the current plan');
+      const finalState = JSON.parse(fs.readFileSync(installStatePath, 'utf8'));
+      assert.ok(!finalState.operations.some(operation => (
+        /\.opencode\/(plugins|tools)\/.*\.ts$/.test(
+          String(operation.sourceRelativePath).replace(/\\/g, '/')
+        ) || String(operation.sourceRelativePath).replace(/\\/g, '/') === '.opencode/dist/plugins/retired.js'
+      )), 'Should remove obsolete runtime sources from install-state');
+    } finally {
+      cleanup(tempDir);
+    }
+  })) passed++; else failed++;
+
   if (test('per-operation guard runs after mkdir and immediately before a copy write', () => {
     const tempDir = createTempDir('install-executor-write-guard-');
     try {
