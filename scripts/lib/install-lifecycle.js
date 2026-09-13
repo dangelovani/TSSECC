@@ -32,7 +32,7 @@ const {
   updateSettingsAtomic,
   validateManagedHooks,
 } = require('./install/claude-settings');
-const { adaptAntigravityAgent } = require('./install/antigravity-agent');
+const { transformInstallContent } = require('./install/content-transform');
 const { buildInstallIndex, rewriteRelativeLinks } = require('./install/link-rewrite');
 const { getInstallTargetAdapter, listInstallTargetAdapters } = require('./install-targets/registry');
 const { resolveInvocationEnvironment } = require('./invocation-environment');
@@ -223,18 +223,8 @@ function buildLinkIndexForOperations(operations, trustedRoot) {
   return buildInstallIndex(mappings);
 }
 
-function transformCopyFileContent(operation, content) {
-  if (!operation.contentTransform) {
-    return content;
-  }
-  if (operation.contentTransform === 'antigravity-agent-frontmatter') {
-    return adaptAntigravityAgent(content, operation.sourceRelativePath);
-  }
-  throw new Error(`Unknown install content transform: ${operation.contentTransform}`);
-}
-
 function getExpectedCopyFileContent(operation, content, linkIndex) {
-  const transformed = transformCopyFileContent(operation, content);
+  const transformed = transformInstallContent(operation, content);
   if (!linkIndex || !operation.sourceRelativePath || !isMarkdownPath(operation.destinationPath)) {
     return transformed;
   }
