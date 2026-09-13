@@ -5,71 +5,71 @@ origin: ECC direct-port adaptation
 version: "1.0.0"
 ---
 
-# HIPAA Compliance
+# HIPAAコンプライアンス
 
-Use this as the HIPAA-specific entrypoint when a task is clearly about US healthcare compliance. This skill intentionally stays thin and canonical:
+タスクが明確に米国ヘルスケアコンプライアンスに関する場合にHIPAA固有のエントリポイントとしてこれを使用する。このスキルは意図的に薄くカノニカルに保たれている：
 
-- `healthcare-phi-compliance` remains the primary implementation skill for PHI/PII handling, data classification, audit logging, encryption, and leak prevention.
-- `healthcare-reviewer` remains the specialized reviewer when code, architecture, or product behavior needs a healthcare-aware second pass.
-- `security-review` still applies for general auth, input-handling, secrets, API, and deployment hardening.
+- `healthcare-phi-compliance` は、PHI/PII処理、データ分類、監査ログ、暗号化、漏洩防止の主要な実装スキルとして残る。
+- `healthcare-reviewer` は、コード、アーキテクチャ、または製品の動作にヘルスケア対応の二次チェックが必要な場合の専門レビューアーとして残る。
+- `security-review` は、一般的な認証、入力処理、シークレット、API、デプロイメント強化に引き続き適用される。
 
-## When to Use
+## いつ使用するか
 
-- The request explicitly mentions HIPAA, PHI, covered entities, business associates, or BAAs
-- Building or reviewing US healthcare software that stores, processes, exports, or transmits PHI
-- Assessing whether logging, analytics, LLM prompts, storage, or support workflows create HIPAA exposure
-- Designing patient-facing or clinician-facing systems where minimum necessary access and auditability matter
+- リクエストがHIPAA、PHI、対象事業体、事業提携先、またはBAAに明示的に言及している場合
+- PHIを保存、処理、エクスポート、または送信する米国ヘルスケアソフトウェアの構築またはレビュー
+- ログ、分析、LLMプロンプト、ストレージ、またはサポートワークフローがHIPAAエクスポージャーを生み出すかどうかの評価
+- 最小必要アクセスと監査可能性が重要な患者向けまたは臨床医向けシステムの設計
 
-## How It Works
+## 動作方法
 
-Treat HIPAA as an overlay on top of the broader healthcare privacy skill:
+HIPAAをより広範なヘルスケアプライバシースキルの上のオーバーレイとして扱う：
 
-1. Start with `healthcare-phi-compliance` for the concrete implementation rules.
-2. Apply HIPAA-specific decision gates:
-   - Is this data PHI?
-   - Is this actor a covered entity or business associate?
-   - Does a vendor or model provider require a BAA before touching the data?
-   - Is access limited to the minimum necessary scope?
-   - Are read/write/export events auditable?
-3. Escalate to `healthcare-reviewer` if the task affects patient safety, clinical workflows, or regulated production architecture.
+1. 具体的な実装ルールについては `healthcare-phi-compliance` から始める。
+2. HIPAA固有の判断ゲートを適用する：
+   - このデータはPHIか？
+   - このアクターは対象事業体または事業提携先か？
+   - ベンダーまたはモデルプロバイダーがデータに触れる前にBAAが必要か？
+   - アクセスは最小必要範囲に制限されているか？
+   - 読み取り/書き込み/エクスポートイベントは監査可能か？
+3. タスクが患者安全、臨床ワークフロー、または規制対象の本番アーキテクチャに影響する場合は `healthcare-reviewer` にエスカレーションする。
 
-## HIPAA-Specific Guardrails
+## HIPAA固有のガードレール
 
-- Never place PHI in logs, analytics events, crash reports, prompts, or client-visible error strings.
-- Never expose PHI in URLs, browser storage, screenshots, or copied example payloads.
-- Require authenticated access, scoped authorization, and audit trails for PHI reads and writes.
-- Treat third-party SaaS, observability, support tooling, and LLM providers as blocked-by-default until BAA status and data boundaries are clear.
-- Follow minimum necessary access: the right user should only see the smallest PHI slice needed for the task.
-- Prefer opaque internal IDs over names, MRNs, phone numbers, addresses, or other identifiers.
+- ログ、分析イベント、クラッシュレポート、プロンプト、またはクライアント表示のエラー文字列にPHIを配置しない。
+- URL、ブラウザストレージ、スクリーンショット、またはコピーされた例のペイロードでPHIを公開しない。
+- PHIの読み取りと書き込みには、認証されたアクセス、スコープ付き認可、監査証跡を要求する。
+- サードパーティSaaS、オブザーバビリティ、サポートツール、LLMプロバイダーは、BAA状態とデータ境界が明確になるまでデフォルトブロックとして扱う。
+- 最小必要アクセスに従う：正しいユーザーはタスクに必要な最小限のPHIスライスのみを見るべきである。
+- 名前、MRN、電話番号、住所、その他の識別子よりも不透明な内部IDを優先する。
 
-## Examples
+## 例
 
-### Example 1: Product request framed as HIPAA
+### 例1：HIPAAとして枠組みされた製品リクエスト
 
-User request:
+ユーザーリクエスト：
 
-> Add AI-generated visit summaries to our clinician dashboard. We serve US clinics and need to stay HIPAA compliant.
+> 臨床医ダッシュボードにAI生成の訪問サマリーを追加してください。米国のクリニックを対象としており、HIPAA準拠を維持する必要があります。
 
-Response pattern:
+応答パターン：
 
-- Activate `hipaa-compliance`
-- Use `healthcare-phi-compliance` to review PHI movement, logging, storage, and prompt boundaries
-- Verify whether the summarization provider is covered by a BAA before any PHI is sent
-- Escalate to `healthcare-reviewer` if the summaries influence clinical decisions
+- `hipaa-compliance` を有効化
+- `healthcare-phi-compliance` を使用してPHIの移動、ログ、ストレージ、プロンプト境界をレビュー
+- PHIが送信される前に、要約プロバイダーがBAAでカバーされているか確認
+- サマリーが臨床判断に影響する場合は `healthcare-reviewer` にエスカレーション
 
-### Example 2: Vendor/tooling decision
+### 例2：ベンダー/ツールの決定
 
-User request:
+ユーザーリクエスト：
 
-> Can we send support transcripts and patient messages into our analytics stack?
+> サポートトランスクリプトと患者メッセージを分析スタックに送信できますか？
 
-Response pattern:
+応答パターン：
 
-- Assume those messages may contain PHI
-- Block the design unless the analytics vendor is approved for HIPAA-bound workloads and the data path is minimized
-- Require redaction or a non-PHI event model when possible
+- それらのメッセージにPHIが含まれる可能性があると想定する
+- 分析ベンダーがHIPAA対応ワークロード用に承認され、データパスが最小化されていない限り、設計をブロックする
+- 可能な場合は、リダクションまたは非PHIイベントモデルを要求する
 
-## Related Skills
+## 関連スキル
 
 - `healthcare-phi-compliance`
 - `healthcare-reviewer`

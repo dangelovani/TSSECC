@@ -4,27 +4,27 @@ description: ECC の現在のエージェント、スキル、コマンド、フ
 origin: community
 ---
 
-# ECC Guide
+# ECC ガイド
 
-Use this skill when a user needs help understanding, navigating, installing, or choosing parts of Everything Claude Code.
+ユーザーが Everything Claude Code の理解、ナビゲーション、インストール、または各パーツの選択に助けが必要な場合にこのスキルを使用してください。
 
-## When To Use
+## いつ使用するか
 
-Use this skill when the user:
+以下の場合にこのスキルを使用してください：
 
-- asks what ECC includes
-- wants help finding a skill, command, agent, hook, rule, or install profile
-- is new to the repository and needs a guided path
-- asks "how do I do X with ECC?"
-- asks which ECC components fit a project
-- needs a lightweight explanation of how commands, skills, agents, hooks, and rules relate
-- is confused by install paths, duplicate installs, reset/uninstall, or selective install options
+- ECC に何が含まれているか質問があるとき
+- スキル、コマンド、エージェント、フック、ルール、またはインストールプロファイルの検索に助けが必要なとき
+- リポジトリが初めてでガイド付きパスが必要なとき
+- 「ECCでXをするにはどうすればいい？」と質問があるとき
+- プロジェクトに適したECCコンポーネントを知りたいとき
+- コマンド、スキル、エージェント、フック、ルールの関係について軽い説明が必要なとき
+- インストールパス、重複インストール、リセット/アンインストール、選択的インストールオプションについて混乱しているとき
 
-## Core Principle
+## 基本原則
 
-Answer from current files, not memory. ECC changes quickly, so hard-coded catalog counts, feature lists, and install instructions go stale.
+記憶ではなく現在のファイルから回答する。ECCは頻繁に変更されるため、ハードコードされたカタログ数、機能リスト、インストール手順は古くなる。
 
-When the ECC repository is available, inspect the relevant files before giving a concrete answer:
+ECCリポジトリが利用可能な場合、具体的な回答をする前に関連ファイルを検査する：
 
 ```bash
 node scripts/ci/catalog.js --json
@@ -35,74 +35,74 @@ node scripts/install-plan.js --list-profiles
 node scripts/install-plan.js --list-components --json
 ```
 
-Use the smallest set of reads needed for the user's question.
+ユーザーの質問に必要な最小限の読み込みセットを使用する。
 
-## Repository Map
+## リポジトリマップ
 
-- `README.md`: install paths, uninstall/reset guidance, public positioning, FAQs
-- `AGENTS.md`: contributor guidance and project structure
-- `agent.yaml`: exported gitagent surface and command list
-- `commands/`: maintained slash-command compatibility shims
-- `skills/*/SKILL.md`: reusable workflows and domain playbooks
-- `agents/*.md`: delegated subagent role prompts
-- `rules/`: language and harness rules
-- `hooks/README.md`, `hooks/hooks.json`, `scripts/hooks/`: hook behavior and safety gates
-- `manifests/install-*.json`: selective install modules, components, profiles, and target support
-- `docs/`: harness guides, architecture notes, translated docs, release docs
+- `README.md`: インストールパス、アンインストール/リセットガイダンス、公開ポジショニング、FAQ
+- `AGENTS.md`: コントリビューターガイダンスとプロジェクト構造
+- `agent.yaml`: エクスポートされたgitagentサーフェスとコマンドリスト
+- `commands/`: メンテナンスされたスラッシュコマンド互換シム
+- `skills/*/SKILL.md`: 再利用可能なワークフローとドメインプレイブック
+- `agents/*.md`: 委任されたサブエージェントロールプロンプト
+- `rules/`: 言語とハーネスのルール
+- `hooks/README.md`, `hooks/hooks.json`, `scripts/hooks/`: フック動作とセーフティゲート
+- `manifests/install-*.json`: 選択的インストールモジュール、コンポーネント、プロファイル、ターゲットサポート
+- `docs/`: ハーネスガイド、アーキテクチャノート、翻訳ドキュメント、リリースドキュメント
 
-## Response Style
+## 応答スタイル
 
-Lead with the answer, then give the next action. Most users do not need a full catalog dump.
+まず回答を示し、次にアクションを提示する。ほとんどのユーザーはフルカタログダンプを必要としない。
 
-Good first response shape:
+良い最初の応答の形：
 
-1. what to use
-2. why it fits
-3. exact file or command to inspect
-4. one next command or question
+1. 何を使うべきか
+2. なぜそれが適しているか
+3. 検査すべき正確なファイルまたはコマンド
+4. 1つの次のコマンドまたは質問
 
-Avoid:
+避けるべきこと：
 
-- listing every skill or command by default
-- repeating large README sections
-- recommending retired command shims when a skill-first path exists
-- claiming a component exists without checking the filesystem
-- replacing install guidance with manual copy commands when the managed installer supports the target
+- デフォルトですべてのスキルやコマンドをリストすること
+- READMEの大きなセクションを繰り返すこと
+- スキルファーストのパスが存在する場合に廃止されたコマンドシムを推奨すること
+- ファイルシステムを確認せずにコンポーネントが存在すると主張すること
+- マネージドインストーラーがターゲットをサポートしている場合に手動コピーコマンドでインストールガイダンスを置き換えること
 
-## Common Tasks
+## よくあるタスク
 
-### New User Onboarding
+### 新規ユーザーオンボーディング
 
-Give a short menu:
+短いメニューを提示する：
 
-- install or reset ECC
-- pick skills for a project
-- understand commands vs skills
-- inspect hooks and safety behavior
-- run a harness audit
-- find a specific workflow
+- ECCのインストールまたはリセット
+- プロジェクトに適したスキルの選択
+- コマンドとスキルの違いの理解
+- フックとセーフティ動作の検査
+- ハーネス監査の実行
+- 特定のワークフローの検索
 
-Point to `README.md` for install/reset and `/project-init` for project-specific onboarding.
+インストール/リセットについては `README.md` を、プロジェクト固有のオンボーディングについては `/project-init` を案内する。
 
-### Feature Discovery
+### 機能の検索
 
-For "what should I use for X?":
+「Xには何を使うべきか？」に対して：
 
-1. Search `skills/`, `commands/`, and `agents/`.
-2. Prefer skills as the primary workflow surface.
-3. Use commands only when they are a maintained compatibility shim or a user explicitly wants slash-command behavior.
-4. Mention agents when delegation is useful.
+1. `skills/`、`commands/`、`agents/` を検索する。
+2. プライマリワークフローサーフェスとしてスキルを優先する。
+3. コマンドはメンテナンスされた互換シムの場合、またはユーザーが明示的にスラッシュコマンドの動作を望む場合にのみ使用する。
+4. 委任が有用な場合にエージェントに言及する。
 
-Useful searches:
+有用な検索：
 
 ```bash
-rg -n "<query>" skills commands agents docs
+rg -n "<クエリ>" skills commands agents docs
 find skills -maxdepth 2 -name SKILL.md | sort
 ```
 
-### Install Guidance
+### インストールガイダンス
 
-Use managed install paths:
+マネージドインストールパスを使用する：
 
 ```bash
 node scripts/install-plan.js --list-profiles
@@ -110,36 +110,36 @@ node scripts/install-plan.js --profile minimal --target claude --json
 node scripts/install-apply.js --profile minimal --target claude --dry-run
 ```
 
-For specific skill installs:
+特定のスキルインストールの場合：
 
 ```bash
-node scripts/install-plan.js --skills <skill-id> --target claude --json
-node scripts/install-apply.js --skills <skill-id> --target claude --dry-run
+node scripts/install-plan.js --skills <スキルID> --target claude --json
+node scripts/install-apply.js --skills <スキルID> --target claude --dry-run
 ```
 
-Warn users not to stack plugin installs and full manual/profile installs unless they intentionally want duplicate surfaces.
+意図的に重複サーフェスが必要でない限り、プラグインインストールとフル手動/プロファイルインストールを重ねないようユーザーに警告する。
 
-### Project Onboarding
+### プロジェクトオンボーディング
 
-Use `/project-init` when the user wants ECC configured for a target repo. The expected sequence is:
+ユーザーがターゲットリポジトリにECCを設定したい場合は `/project-init` を使用する。期待されるシーケンス：
 
-1. detect the stack from project files
-2. resolve a dry-run install plan
-3. inspect existing `CLAUDE.md` and settings files
-4. ask before applying changes
-5. keep generated guidance minimal and repo-specific
+1. プロジェクトファイルからスタックを検出する
+2. ドライランインストールプランを解決する
+3. 既存の `CLAUDE.md` と設定ファイルを検査する
+4. 変更を適用する前に確認する
+5. 生成されるガイダンスを最小限かつリポジトリ固有に保つ
 
-### Troubleshooting
+### トラブルシューティング
 
-Ask for the target harness and install path first, then inspect:
+最初にターゲットハーネスとインストールパスを確認し、次に検査する：
 
-- plugin install metadata
-- `.claude/`, `.cursor/`, `.codex/`, `.gemini/`, `.opencode/`, `.codebuddy/`, `.joycode/`, or `.qwen/`
+- プラグインインストールメタデータ
+- `.claude/`、`.cursor/`、`.codex/`、`.gemini/`、`.opencode/`、`.codebuddy/`、`.joycode/`、または `.qwen/`
 - `hooks/hooks.json`
-- install-state files
-- relevant command/skill files
+- インストール状態ファイル
+- 関連するコマンド/スキルファイル
 
-For repo health, suggest:
+リポジトリの健全性については、以下を提案する：
 
 ```bash
 npm run harness:audit -- --format text
@@ -147,43 +147,43 @@ npm run observability:ready
 npm test
 ```
 
-## Output Templates
+## 出力テンプレート
 
-### Short Recommendation
-
-```text
-Use <skill-or-command>. It fits because <reason>.
-
-Canonical file: <path>
-Verify with: <command>
-Next: <one concrete action>
-```
-
-### Search Results
+### 短い推奨
 
 ```text
-Best matches:
-- <path>: <why it matters>
-- <path>: <why it matters>
+<スキルまたはコマンド> を使用してください。適している理由は <理由> です。
 
-Recommendation: <which one to use first and why>
+正規ファイル: <パス>
+確認方法: <コマンド>
+次のステップ: <1つの具体的なアクション>
 ```
 
-### Install Plan Summary
+### 検索結果
 
 ```text
-Detected: <stack evidence>
-Target: <harness>
-Plan: <profile/modules/skills>
-Dry run: <command>
-Would change: <paths>
-Needs approval before apply: <yes/no>
+最適な一致:
+- <パス>: <重要な理由>
+- <パス>: <重要な理由>
+
+推奨: <最初に使うべきものとその理由>
 ```
 
-## Related Surfaces
+### インストールプラン概要
 
-- `/project-init`: stack-aware onboarding plan for a target repo
-- `/harness-audit`: deterministic readiness scorecard
-- `/skill-health`: skill quality review
-- `/skill-create`: generate a new skill from local git history
-- `/security-scan`: inspect Claude/OpenCode configuration security
+```text
+検出: <スタックの証拠>
+ターゲット: <ハーネス>
+プラン: <プロファイル/モジュール/スキル>
+ドライラン: <コマンド>
+変更対象: <パス>
+適用前に承認が必要: <はい/いいえ>
+```
+
+## 関連サーフェス
+
+- `/project-init`: ターゲットリポジトリ向けのスタック対応オンボーディングプラン
+- `/harness-audit`: 決定論的な準備状況スコアカード
+- `/skill-health`: スキル品質レビュー
+- `/skill-create`: ローカルgit履歴から新しいスキルを生成
+- `/security-scan`: Claude/OpenCode設定のセキュリティ検査

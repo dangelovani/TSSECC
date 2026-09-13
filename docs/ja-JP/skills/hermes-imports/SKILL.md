@@ -4,85 +4,85 @@ description: Hermesデータインポート、マッピング、変換、およ�
 origin: ECC
 ---
 
-# Hermes Imports
+# Hermes インポート
 
-Use this skill when turning a repeated Hermes workflow into something safe to ship in ECC.
+繰り返し使用されるHermesワークフローをECCで安全に配布できるものに変換する場合にこのスキルを使用してください。
 
-Hermes is the operator shell. ECC is the reusable workflow layer. Imports should move stable patterns from Hermes into ECC without moving private state.
+Hermesはオペレーターシェルです。ECCは再利用可能なワークフローレイヤーです。インポートはプライベートな状態を移動せずに、安定したパターンをHermesからECCに移動すべきです。
 
-## When To Use
+## いつ使用するか
 
-- A Hermes workflow has repeated enough times to become reusable.
-- A local operator prompt should become a public ECC skill.
-- A launch, content, research, or engineering workflow needs sanitized handoff docs.
-- A workflow mentions local paths, credentials, personal datasets, or private account names that must be removed before publication.
+- Hermesワークフローが再利用可能になるほど繰り返された場合。
+- ローカルのオペレータープロンプトをパブリックなECCスキルにすべき場合。
+- ローンチ、コンテンツ、リサーチ、またはエンジニアリングのワークフローにサニタイズされた引き継ぎドキュメントが必要な場合。
+- ワークフローにローカルパス、認証情報、個人データセット、またはプライベートアカウント名が含まれており、公開前に削除が必要な場合。
 
-## Import Rules
+## インポートルール
 
-- Convert local paths to repo-relative paths or placeholders.
-- Replace live account names with role labels such as `operator`, `default profile`, or `workspace owner`.
-- Describe credential requirements by provider name only.
-- Keep examples narrow and operational.
-- Do not ship raw workspace exports, tokens, OAuth files, health data, CRM data, or finance data.
-- If the workflow requires private state to make sense, keep it local.
+- ローカルパスをリポジトリ相対パスまたはプレースホルダーに変換する。
+- ライブアカウント名を `operator`、`default profile`、`workspace owner` などのロールラベルに置き換える。
+- 認証情報の要件はプロバイダー名のみで記述する。
+- 例は狭く実用的に保つ。
+- 生のワークスペースエクスポート、トークン、OAuthファイル、健康データ、CRMデータ、または財務データを配布しない。
+- ワークフローがプライベートな状態なしでは意味をなさない場合、ローカルに保持する。
 
-## Sanitization Checklist
+## サニタイゼーションチェックリスト
 
-Before committing an imported workflow, scan for:
+インポートしたワークフローをコミットする前に、以下をスキャンする：
 
-- absolute paths such as `/Users/...`
-- `~/.hermes` paths unless the doc is explicitly explaining local setup
-- API keys, tokens, cookies, OAuth files, or bearer strings
-- phone numbers, private email addresses, and personal contact graphs
-- client names, family names, or account names that are not already public
-- revenue, health, or CRM details
-- raw logs that include tool output from private systems
+- `/Users/...` などの絶対パス
+- ローカルセットアップの説明を明示的に行うドキュメントでない限り、`~/.hermes` パス
+- APIキー、トークン、Cookie、OAuthファイル、またはBearer文字列
+- 電話番号、プライベートメールアドレス、個人の連絡先グラフ
+- まだ公開されていないクライアント名、家族名、またはアカウント名
+- 収益、健康、またはCRMの詳細
+- プライベートシステムからのツール出力を含む生ログ
 
-## Conversion Pattern
+## 変換パターン
 
-1. Identify the repeatable operator loop.
-2. Strip private inputs and outputs.
-3. Rewrite local paths as repo-relative examples.
-4. Turn one-off instructions into a `When To Use` section and a short process.
-5. Add concrete output requirements.
-6. Run a secret and local-path scan before opening a PR.
+1. 繰り返し可能なオペレーターループを特定する。
+2. プライベートな入出力を除去する。
+3. ローカルパスをリポジトリ相対の例に書き換える。
+4. 一度きりの指示を `いつ使用するか` セクションと短いプロセスに変換する。
+5. 具体的な出力要件を追加する。
+6. PRを開く前にシークレットとローカルパスのスキャンを実行する。
 
-## Example: Launch Handoff
+## 例：ローンチ引き継ぎ
 
-Local Hermes prompt:
-
-```text
-Read my local workspace files and finalize launch copy.
-```
-
-ECC-safe version:
+ローカルHermesプロンプト：
 
 ```text
-Use the public release pack under docs/releases/<version>/.
-Return one X thread, one LinkedIn post, one recording checklist, and the missing assets list.
+ローカルワークスペースファイルを読み取り、ローンチコピーを最終化する。
 ```
 
-## Example: Quiet-Hours Operator Job
-
-Local Hermes job:
+ECC安全バージョン：
 
 ```text
-Run my private inbox, finance, and content checks overnight.
+docs/releases/<version>/ にある公開リリースパックを使用する。
+1つのXスレッド、1つのLinkedIn投稿、1つの録画チェックリスト、および不足アセットリストを返す。
 ```
 
-ECC-safe version:
+## 例：静寂時間帯オペレータージョブ
+
+ローカルHermesジョブ：
 
 ```text
-Describe the scheduler policy, the quiet-hours window, the escalation rules, and the categories of checks. Do not include private data sources or credentials.
+受信トレイ、財務、コンテンツのチェックを夜間に実行する。
 ```
 
-## Output Contract
+ECC安全バージョン：
 
-Return:
+```text
+スケジューラーポリシー、静寂時間帯ウィンドウ、エスカレーションルール、チェックのカテゴリを記述する。プライベートデータソースや認証情報を含めない。
+```
 
-- candidate ECC skill name
-- sanitized workflow summary
-- required public inputs
-- private inputs removed
-- remaining risks
-- files that should be created or updated
+## 出力契約
+
+以下を返す：
+
+- 候補ECCスキル名
+- サニタイズされたワークフローの概要
+- 必要なパブリック入力
+- 削除されたプライベート入力
+- 残存リスク
+- 作成または更新すべきファイル

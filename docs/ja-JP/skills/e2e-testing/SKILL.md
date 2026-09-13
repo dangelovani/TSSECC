@@ -4,11 +4,11 @@ description: Playwright E2Eテストパターン、Page Object Model、設定、
 origin: ECC
 ---
 
-# E2E Testing Patterns
+# E2E テストパターン
 
-Comprehensive Playwright patterns for building stable, fast, and maintainable E2E test suites.
+安定的で高速、保守可能なE2Eテストスイートを構築するための包括的なPlaywrightパターン。
 
-## Test File Organization
+## テストファイルの構成
 
 ```
 tests/
@@ -64,13 +64,13 @@ export class ItemsPage {
 }
 ```
 
-## Test Structure
+## テスト構造
 
 ```typescript
 import { test, expect } from '@playwright/test'
 import { ItemsPage } from '../../pages/ItemsPage'
 
-test.describe('Item Search', () => {
+test.describe('アイテム検索', () => {
   let itemsPage: ItemsPage
 
   test.beforeEach(async ({ page }) => {
@@ -78,7 +78,7 @@ test.describe('Item Search', () => {
     await itemsPage.goto()
   })
 
-  test('should search by keyword', async ({ page }) => {
+  test('キーワードで検索できること', async ({ page }) => {
     await itemsPage.search('test')
 
     const count = await itemsPage.getItemCount()
@@ -88,7 +88,7 @@ test.describe('Item Search', () => {
     await page.screenshot({ path: 'artifacts/search-results.png' })
   })
 
-  test('should handle no results', async ({ page }) => {
+  test('結果なしを適切に処理すること', async ({ page }) => {
     await itemsPage.search('xyznonexistent123')
 
     await expect(page.locator('[data-testid="no-results"]')).toBeVisible()
@@ -97,7 +97,7 @@ test.describe('Item Search', () => {
 })
 ```
 
-## Playwright Configuration
+## Playwright 設定
 
 ```typescript
 import { defineConfig, devices } from '@playwright/test'
@@ -136,63 +136,63 @@ export default defineConfig({
 })
 ```
 
-## Flaky Test Patterns
+## 不安定なテストのパターン
 
-### Quarantine
+### 隔離
 
 ```typescript
-test('flaky: complex search', async ({ page }) => {
-  test.fixme(true, 'Flaky - Issue #123')
-  // test code...
+test('不安定: 複雑な検索', async ({ page }) => {
+  test.fixme(true, '不安定 - Issue #123')
+  // テストコード...
 })
 
-test('conditional skip', async ({ page }) => {
-  test.skip(process.env.CI, 'Flaky in CI - Issue #123')
-  // test code...
+test('条件付きスキップ', async ({ page }) => {
+  test.skip(process.env.CI, 'CIで不安定 - Issue #123')
+  // テストコード...
 })
 ```
 
-### Identify Flakiness
+### 不安定性の特定
 
 ```bash
 npx playwright test tests/search.spec.ts --repeat-each=10
 npx playwright test tests/search.spec.ts --retries=3
 ```
 
-### Common Causes & Fixes
+### よくある原因と修正方法
 
-**Race conditions:**
+**競合状態:**
 ```typescript
-// Bad: assumes element is ready
+// 悪い例: 要素の準備完了を仮定
 await page.click('[data-testid="button"]')
 
-// Good: auto-wait locator
+// 良い例: 自動待機ロケーター
 await page.locator('[data-testid="button"]').click()
 ```
 
-**Network timing:**
+**ネットワークタイミング:**
 ```typescript
-// Bad: arbitrary timeout
+// 悪い例: 任意のタイムアウト
 await page.waitForTimeout(5000)
 
-// Good: wait for specific condition
+// 良い例: 特定の条件を待機
 await page.waitForResponse(resp => resp.url().includes('/api/data'))
 ```
 
-**Animation timing:**
+**アニメーションタイミング:**
 ```typescript
-// Bad: click during animation
+// 悪い例: アニメーション中にクリック
 await page.click('[data-testid="menu-item"]')
 
-// Good: wait for stability
+// 良い例: 安定するまで待機
 await page.locator('[data-testid="menu-item"]').waitFor({ state: 'visible' })
 await page.waitForLoadState('networkidle')
 await page.locator('[data-testid="menu-item"]').click()
 ```
 
-## Artifact Management
+## アーティファクト管理
 
-### Screenshots
+### スクリーンショット
 
 ```typescript
 await page.screenshot({ path: 'artifacts/after-login.png' })
@@ -200,7 +200,7 @@ await page.screenshot({ path: 'artifacts/full-page.png', fullPage: true })
 await page.locator('[data-testid="chart"]').screenshot({ path: 'artifacts/chart.png' })
 ```
 
-### Traces
+### トレース
 
 ```typescript
 await browser.startTracing(page, {
@@ -208,21 +208,21 @@ await browser.startTracing(page, {
   screenshots: true,
   snapshots: true,
 })
-// ... test actions ...
+// ... テストアクション ...
 await browser.stopTracing()
 ```
 
-### Video
+### 動画
 
 ```typescript
-// In playwright.config.ts
+// playwright.config.ts内
 use: {
   video: 'retain-on-failure',
   videosPath: 'artifacts/videos/'
 }
 ```
 
-## CI/CD Integration
+## CI/CD 統合
 
 ```yaml
 # .github/workflows/e2e.yml
@@ -250,38 +250,38 @@ jobs:
           retention-days: 30
 ```
 
-## Test Report Template
+## テストレポートテンプレート
 
 ```markdown
-# E2E Test Report
+# E2E テストレポート
 
-**Date:** YYYY-MM-DD HH:MM
-**Duration:** Xm Ys
-**Status:** PASSING / FAILING
+**日付:** YYYY-MM-DD HH:MM
+**所要時間:** Xm Ys
+**ステータス:** 合格 / 不合格
 
-## Summary
-- Total: X | Passed: Y (Z%) | Failed: A | Flaky: B | Skipped: C
+## サマリー
+- 合計: X | 合格: Y (Z%) | 不合格: A | 不安定: B | スキップ: C
 
-## Failed Tests
+## 失敗したテスト
 
-### test-name
-**File:** `tests/e2e/feature.spec.ts:45`
-**Error:** Expected element to be visible
-**Screenshot:** artifacts/failed.png
-**Recommended Fix:** [description]
+### テスト名
+**ファイル:** `tests/e2e/feature.spec.ts:45`
+**エラー:** 要素が表示されることが期待されました
+**スクリーンショット:** artifacts/failed.png
+**推奨修正:** [説明]
 
-## Artifacts
-- HTML Report: playwright-report/index.html
-- Screenshots: artifacts/*.png
-- Videos: artifacts/videos/*.webm
-- Traces: artifacts/*.zip
+## アーティファクト
+- HTMLレポート: playwright-report/index.html
+- スクリーンショット: artifacts/*.png
+- 動画: artifacts/videos/*.webm
+- トレース: artifacts/*.zip
 ```
 
-## Wallet / Web3 Testing
+## ウォレット / Web3 テスト
 
 ```typescript
-test('wallet connection', async ({ page, context }) => {
-  // Mock wallet provider
+test('ウォレット接続', async ({ page, context }) => {
+  // ウォレットプロバイダーのモック
   await context.addInitScript(() => {
     window.ethereum = {
       isMetaMask: true,
@@ -299,22 +299,22 @@ test('wallet connection', async ({ page, context }) => {
 })
 ```
 
-## Financial / Critical Flow Testing
+## 金融 / クリティカルフローテスト
 
 ```typescript
-test('trade execution', async ({ page }) => {
-  // Skip on production — real money
-  test.skip(process.env.NODE_ENV === 'production', 'Skip on production')
+test('取引実行', async ({ page }) => {
+  // 本番環境ではスキップ — 実際のお金が関わる
+  test.skip(process.env.NODE_ENV === 'production', '本番環境ではスキップ')
 
   await page.goto('/markets/test-market')
   await page.locator('[data-testid="position-yes"]').click()
   await page.locator('[data-testid="trade-amount"]').fill('1.0')
 
-  // Verify preview
+  // プレビューの確認
   const preview = page.locator('[data-testid="trade-preview"]')
   await expect(preview).toContainText('1.0')
 
-  // Confirm and wait for blockchain
+  // 確認してブロックチェーンを待機
   await page.locator('[data-testid="confirm-trade"]').click()
   await page.waitForResponse(
     resp => resp.url().includes('/api/trade') && resp.status() === 200,

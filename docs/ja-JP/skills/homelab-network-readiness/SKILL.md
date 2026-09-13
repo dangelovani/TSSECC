@@ -4,166 +4,142 @@ description: ホームラボネットワーク準備、セキュリティ評価�
 origin: community
 ---
 
-# Homelab Network Readiness
+# ホームラボネットワーク準備状況
 
-Use this skill before changing a home or small-lab network that mixes VLANs,
-Pi-hole or another local DNS resolver, firewall rules, and remote VPN access.
+VLAN、Pi-holeやその他のローカルDNSリゾルバー、ファイアウォールルール、およびリモートVPNアクセスが混在するホームネットワークや小規模ラボネットワークを変更する前に、このスキルを使用してください。
 
-This is a planning and review skill. Do not turn it into copy-paste router,
-firewall, or VPN configuration unless the target platform, current topology,
-rollback path, console access, and maintenance window are all known.
+これは設計とレビューのためのスキルです。ターゲットプラットフォーム、現在のトポロジー、ロールバック手順、コンソールへのアクセス手段、およびメンテナンス時間帯がすべて明確になるまでは、ルーター、ファイアウォール、またはVPNの設定をそのままコピー＆ペーストして適用しないでください。
 
-## When to Use
+## いつ使用するか
 
-- Preparing to split a flat network into trusted, IoT, guest, server, or
-  management VLANs.
-- Moving DHCP clients to Pi-hole, AdGuard Home, Unbound, or another local DNS
-  resolver.
-- Adding WireGuard, Tailscale, ZeroTier, OpenVPN, or router-native VPN access.
-- Reviewing whether a homelab change can lock the operator out of the gateway,
-  switch, access point, DNS server, or VPN server.
-- Turning an informal home-network idea into a staged migration plan with
-  validation evidence.
+- フラットなネットワークを、信頼されたセグメント、IoT、ゲスト、サーバー、または管理用VLANに分割する準備をするとき。
+- DHCPクライアントの参照先を Pi-hole、AdGuard Home、Unbound、またはその他のローカルDNSリゾルバーに変更するとき。
+- WireGuard、Tailscale、ZeroTier、OpenVPN、またはルーターネイティブのVPNアクセスを追加するとき。
+- ホームラボの変更によって、オペレーターがゲートウェイ、スイッチ、アクセスポイント、DNSサーバー、またはVPNサーバーから締め出される（アクセス不能になる）リスクがないかレビューするとき。
+- 非公式なホームネットワークのアイデアを、検証証拠を伴う段階的な移行計画に変換するとき。
 
-## Safety Rules
+## 安全ルール
 
-- Keep the first answer read-only: inventory, risks, staged plan, validation,
-  and rollback.
-- Do not expose gateway admin panels, DNS resolvers, SSH, NAS consoles, or VPN
-  management UIs directly to the public internet.
-- Do not provide firewall, NAT, VLAN, DHCP, or VPN commands without a confirmed
-  platform and a rollback procedure.
-- Require out-of-band or same-room console access before changing management
-  VLANs, trunk ports, firewall default policies, or DHCP/DNS settings.
-- Keep a working path back to the internet before pointing the whole network at
-  a new DNS resolver or VPN route.
-- Treat IoT, guest, camera, and lab-server networks as different trust zones
-  until the operator explicitly chooses otherwise.
+- 最初の回答は「読み取り専用」に留めます: インベントリ、リスク、段階的計画、検証方法、およびロールバック手順を整理します。
+- ゲートウェイの管理画面、DNSリゾルバー、SSH、NASコンソール、またはVPN管理用UIをパブリックインターネットに直接公開しないでください。
+- 確認済みのプラットフォームとロールバック手順がない状態で、ファイアウォール、NAT、VLAN、DHCP、またはVPNのコマンドを提示しないでください。
+- 管理用VLAN、トランクポート、ファイアウォールのデフォルトポリシー、またはDHCP/DNS設定を変更する前に、アウトオブバンド（シリアル等）または同一室内でのコンソールアクセス手段を確保してください。
+- ネットワーク全体を新しいDNSリゾルバーやVPNルートに向ける前に、インターネットへの接続を維持するための予備ルートを確保してください。
+- オペレーターが明示的に定義しない限り、IoT、ゲスト、カメラ、およびラボサーバーのネットワークは、それぞれ異なる信頼ゾーン（セキュリティ境界）として扱ってください。
 
-## Required Inventory
+## 必要なインベントリの収集
 
-Collect this before giving implementation steps:
+実装ステップを提示する前に、以下の情報を収集します：
 
-| Area | Questions |
+| 領域 | 質問項目 |
 | --- | --- |
-| Internet edge | What is the modem or ONT? Is the ISP router bridged or still routing? |
-| Gateway | What routes, firewalls, handles DHCP, and terminates VPNs? |
-| Switching | Which switch ports are uplinks, access ports, trunks, or unmanaged? |
-| Wi-Fi | Which SSIDs map to which networks, and are APs wired or mesh? |
-| Addressing | What subnets exist today, and which ranges conflict with VPN sites? |
-| DNS/DHCP | Which service currently hands out leases and resolver addresses? |
-| Management | How will the operator reach the gateway, switch, and AP after changes? |
-| Recovery | What can be reverted locally if DNS, DHCP, VLANs, or VPN routes break? |
+| インターネット境界 | モデムまたはONTのモデルは？ISPルーターはブリッジモードか、それともルーティングしているか？ |
+| ゲートウェイ | ルーティング、ファイアウォール、DHCPの処理、およびVPNの終端はどのデバイスが行っているか？ |
+| スイッチング | 各スイッチポートは、アップリンク、アクセスポート、トランク、またはアンマネージド（非管理）のどれに該当するか？ |
+| Wi-Fi | 各SSIDはどのネットワークにマッピングされているか？APは有線接続かメッシュ接続か？ |
+| アドレッシング | 現在どのようなサブネットが存在し、どの範囲がVPNサイトと衝突するか？ |
+| DNS/DHCP | 現在どのサービスがDHCPリースとリゾルバーアドレスを配布しているか？ |
+| 管理アクセス | 変更後にオペレーターはどのようにしてゲートウェイ、スイッチ、およびAPに到達するか？ |
+| リカバリー | DNS、DHCP、VLAN、またはVPNルートが切断された場合、ローカルで元に戻す（ロールバックする）手段はあるか？ |
 
-## VLAN And Trust-Zone Plan
+## VLANおよび信頼ゾーン計画
 
-Start with intent rather than vendor syntax.
+ベンダー固有の構文から始めるのではなく、まず設計の意図から整理します。
 
-| Zone | Typical contents | Default policy |
+| ゾーン | 代表的なコンテンツ | デフォルトポリシー |
 | --- | --- | --- |
-| Trusted | Laptops, phones, admin workstations | Can reach shared services and management only when needed |
-| Servers | NAS, Home Assistant, lab hosts, DNS resolver | Accepts narrow inbound flows from trusted clients |
-| IoT | TVs, smart plugs, cameras, speakers | Internet access plus explicit exceptions only |
-| Guest | Visitor devices | Internet-only, no LAN reachability |
-| Management | Gateway, switches, APs, controllers | Reachable only from trusted admin devices |
-| VPN | Remote clients | Same or narrower access than trusted clients |
+| 信頼されたゾーン (Trusted) | ノートPC、スマートフォン、管理用ワークステーション | 必要な場合にのみ共有サービスおよび管理ゾーンに到達可能 |
+| サーバーゾーン (Servers) | NAS、Home Assistant、ラボ用ホスト、DNSリゾルバー | 信頼されたクライアントからの限定されたインバウンドトラフィックを許可 |
+| IoTゾーン | テレビ、スマートプラグ、カメラ、スピーカー | インターネットアクセスと、明示的な例外のみ許可 |
+| ゲストゾーン (Guest) | 訪問者のデバイス | インターネットアクセスのみ、LAN内の他デバイスへの接続は不可 |
+| 管理ゾーン (Management) | ゲートウェイ、スイッチ、AP、コントローラー | 信頼された管理デバイスからのみ到達可能 |
+| VPNゾーン | リモートクライアント | 信頼されたクライアントと同等か、より制限されたアクセス権 |
 
-Before recommending VLAN IDs or subnets, confirm:
+VLAN IDやサブネットを推奨する前に、以下を確認してください：
 
-1. The gateway supports inter-VLAN routing and firewall rules.
-2. The switch supports the required tagged and untagged port behavior.
-3. The APs can map SSIDs to VLANs.
-4. The operator knows which port they are connected through during the change.
-5. The management network remains reachable after trunk and SSID changes.
+1. ゲートウェイがVLAN間ルーティングとファイアウォールルールをサポートしていること。
+2. スイッチが必要なタグ付き/タグなしポート動作をサポートしていること。
+3. APがSSIDをVLANにマッピングできること。
+4. 変更作業中にオペレーター自身がどのポート経由で接続しているかを把握していること。
+5. トランクおよびSSIDの変更後も管理ネットワークへの接続が維持されること。
 
-## DNS Filtering Readiness
+## DNSフィルタリングの準備
 
-Pi-hole or another local resolver should be introduced as a dependency, not as a
-single point of failure.
+Pi-holeやその他のローカルリゾルバーは、単一障害点（SPOF）にならないよう、依存関係として慎重に導入する必要があります。
 
-1. Give the resolver a reserved address before using it in DHCP options.
-2. Confirm it can resolve public DNS and local `home.arpa` names.
-3. Keep the gateway or a second resolver available as a temporary fallback.
-4. Test one client or one VLAN before changing every DHCP scope.
-5. Document which networks may bypass filtering and why.
-6. Check that blocking rules do not break captive portals, work VPNs, firmware
-   updates, or medical/security devices.
+1. DHCPオプションで使用する前に、リゾルバーに固定アドレス（静的IP）を割り当てます。
+2. そのリゾルバーがパブリックDNSおよびローカルの `home.arpa` 名前解決ができることを確認します。
+3. ゲートウェイまたは2番目のリゾルバーを一時的なフォールバック（予備）として利用可能な状態に保ちます。
+4. すべてのDHCPスコープを変更する前に、まず1つのクライアントまたは1つのVLANでテストします。
+5. フィルタリングをバイパス（回避）する可能性のあるネットワークとその理由をドキュメント化します。
+6. ブロックルールがキャプティブポータル（認証画面）、仕事用のVPN、ファームウェアの更新、または医療・セキュリティデバイスの動作を妨げないことを確認します。
 
-Useful validation evidence:
+検証用証拠の例：
 
 ```text
-Client gets expected DHCP lease
-Client receives expected DNS resolver
-Public DNS lookup succeeds
-Local home.arpa lookup succeeds
-Blocked test domain is blocked only where intended
-Gateway and DNS admin interfaces are not reachable from guest or IoT networks
+クライアントが期待通りのDHCPリースを取得できること
+クライアントが期待通りのDNSリゾルバーを受信すること
+パブリックDNSのルックアップが成功すること
+ローカルの home.arpa ルックアップが成功すること
+ブロック対象のテスト用ドメインが、意図した場所でのみブロックされていること
+ゲートウェイおよびDNS管理画面に、ゲストやIoTネットワークからアクセスできないこと
 ```
 
-## Remote Access Readiness
+## リモートアクセスの準備
 
-For WireGuard-style access, decide what the VPN is allowed to reach before
-generating keys or opening ports.
+WireGuard等のアクセスを追加する場合、キーの生成やポートの開放を行う前に、VPNクライアントが到達可能な範囲を決定します。
 
-| Mode | Use when | Risk notes |
+| モード | 使用ケース | リスクに関する注意点 |
 | --- | --- | --- |
-| Split tunnel to one subnet | Remote admin for NAS or lab hosts | Keep route list narrow |
-| Split tunnel to trusted services | Access selected apps by IP or DNS | Requires precise firewall rules |
-| Full tunnel | Untrusted networks or travel | More bandwidth and DNS responsibility |
-| Overlay VPN | Simpler remote access with identity controls | Still needs ACL review |
+| 単一サブネットへのスプリットトンネル | NASやラボホストのリモート管理用 | ルートリストを最小限に絞る |
+| 信頼されたサービスへのスプリットトンネル | IPやDNSで選択したアプリへのアクセス | 詳細なファイアウォールルールが必要 |
+| フルスクリーントンネル | 信頼できないネットワーク（外出先）からの利用 | 帯域幅消費とDNSの依存度が高まる |
+| オーバーレイVPN | ID制御を備えたシンプルなリモートアクセス | アクセス制御リスト（ACL）のレビューが必要 |
 
-Do not recommend port forwarding until the operator confirms:
+オペレーターが以下を確認するまでは、ポートフォワーディングを推奨しないでください：
 
-- The VPN endpoint is patched and actively maintained.
-- The forwarded port goes only to the VPN service, not an admin UI.
-- Dynamic DNS, public IP behavior, and ISP CGNAT status are understood.
-- Peer keys can be revoked without rebuilding the whole network.
-- Logs or connection status can verify who connected and when.
+- VPNエンドポイントにパッチが適用され、アクティブにメンテナンスされていること。
+- 転送されたポートが管理UIではなく、VPNサービスのみに接続されていること。
+- DDNS（動的DNS）、グローバルIPの動作、およびISPのCGNAT（キャリアグレードNAT）の状態が把握されていること。
+- ピアキー（接続用鍵）を、ネットワーク全体を再構築することなく失効・無効化できること。
+- 誰がいつ接続したかをログまたは接続ステータスで検証できること。
 
-## Change Sequence
+## 移行ステップ
 
-Prefer small, reversible changes:
+小さく、元に戻せる変更を優先します：
 
-1. Snapshot the current topology, IP plan, DHCP settings, DNS settings, and
-   firewall rules.
-2. Reserve infrastructure addresses for gateway, DNS, controller, APs, NAS, and
-   VPN endpoint.
-3. Create the new zone or VLAN without moving critical devices.
-4. Move one test client and validate DHCP, DNS, routing, internet, and block
-   behavior.
-5. Add narrow firewall exceptions for required flows.
-6. Move one low-risk device group.
-7. Add VPN access with the narrowest route and firewall policy that satisfies
-   the use case.
-8. Document final state, known exceptions, and rollback commands or UI steps.
+1. 現在のトポロジー、IP計画、DHCP設定、DNS設定、およびファイアウォールルールをバックアップ（スナップショット）します。
+2. ゲートウェイ、DNS、コントローラー、AP、NAS、およびVPNエンドポイントのインフラアドレスを固定（予約）します。
+3. 重要なデバイスを移動させずに、新しいゾーンまたはVLANを作成します。
+4. テスト用クライアントを1台移動し、DHCP、DNS、ルーティング、インターネット接続、およびブロック動作を検証します。
+5. 必要な通信に対して、最小限のファイアウォール例外ルールを追加します。
+6. リスクの低いデバイスグループを1つ移行します。
+7. ユースケースを満たす最小限のルートとファイアウォールポリシーでVPNアクセスを追加します。
+8. 最終状態、既知の例外、およびロールバック用のコマンドやUI操作手順をドキュメント化します。
 
-## Review Checklist
+## レビューチェックリスト
 
-- Each network has a reason to exist and a clear trust boundary.
-- No management interface is reachable from guest, IoT, or the public internet.
-- DNS failure does not take down the operator's ability to recover locally.
-- DHCP scope changes were tested on one client before broad rollout.
-- VPN clients receive only the routes and DNS settings they need.
-- Firewall rules are default-deny between zones, with named exceptions.
-- The operator can still reach gateway, switch, AP, DNS, and VPN admin surfaces.
-- Rollback is documented in the same vocabulary as the chosen platform UI or
-  CLI.
+- 各ネットワークが存在する明確な理由があり、信頼境界が定義されている。
+- 管理画面が、ゲスト、IoT、またはパブリックインターネットからアクセス不能になっている。
+- DNSが停止した場合でも、ローカルで復旧するためのアクセス手段が確保されている。
+- DHCPスコープの変更は、本格導入前に1台のクライアントでテストされている。
+- VPNクライアントには、必要なルートとDNS設定のみが配布されている。
+- ファイアウォールルールはゾーン間でデフォルト拒否（Default-Deny）とし、名前付きの例外のみを許可している。
+- オペレーター自身が、ゲートウェイ、スイッチ、AP、DNS、およびVPNの管理画面に引き続き到達できる。
+- ロールバック手順が、選択したプラットフォームのUIやCLIで使われている用語で記述されている。
 
-## Anti-Patterns
+## 避けるべきアンチパターン
 
-- Segmenting networks before knowing which switch ports and SSIDs carry which
-  VLANs.
-- Moving the admin workstation off the only reachable management network.
-- Pointing all DHCP scopes at a Pi-hole before testing fallback DNS.
-- Publishing NAS, DNS, router, or hypervisor management directly to the
-  internet.
-- Treating VPN access as equivalent to full trusted-LAN access.
-- Adding allow-all firewall rules temporarily and forgetting to remove them.
-- Copying commands from another vendor or firmware version without checking the
-  exact platform syntax.
+- どのスイッチポートやSSIDがどのVLANを運ぶかを確認する前に、ネットワークをセグメント化すること。
+- 唯一アクセス可能な管理ネットワークから、自身の管理用ワークステーションを外してしまうこと。
+- 予備のフォールバックDNSをテストする前に、すべてのDHCPスコープの参照先をPi-holeに向けてしまうこと。
+- NAS、DNS、ルーター、またはハイパーバイザーの管理画面をインターネットに直接公開すること。
+- VPNアクセスを、信頼されたローカルLANへの完全なアクセスと同等に扱うこと。
+- 一時的にすべてのアクセスを許可（Allow-All）するファイアウォールルールを追加し、そのまま削除し忘れること。
+- デバイスの正確な構文を確認せずに、別のベンダーや異なるファームウェアバージョンのコマンドをコピーして使用すること。
 
-## See Also
+## 関連項目
 
-- Skill: `homelab-network-setup`
-- Skill: `network-config-validation`
-- Skill: `network-interface-health`
+- スキル: `homelab-network-setup`
+- スキル: `network-config-validation`
+- スキル: `network-interface-health`

@@ -3,15 +3,15 @@ name: hookify-rules
 description: 自動フック実装、イベントドリブン実行、およびルール駆動ワークフロー。
 ---
 
-# Writing Hookify Rules
+# Hookify ルールの記述
 
-## Overview
+## 概要
 
-Hookify rules are markdown files with YAML frontmatter that define patterns to watch for and messages to show when those patterns match. Rules are stored in `.claude/hookify.{rule-name}.local.md` files.
+Hookifyルールは、監視するパターンとパターンが一致した場合に表示するメッセージを定義するYAMLフロントマター付きのMarkdownファイルです。ルールは `.claude/hookify.{rule-name}.local.md` ファイルに保存されます。
 
-## Rule File Format
+## ルールファイル形式
 
-### Basic Structure
+### 基本構造
 
 ```markdown
 ---
@@ -21,21 +21,21 @@ event: bash|file|stop|prompt|all
 pattern: regex-pattern-here
 ---
 
-Message to show Claude when this rule triggers.
-Can include markdown formatting, warnings, suggestions, etc.
+このルールがトリガーされた場合にClaudeに表示するメッセージ。
+Markdownフォーマット、警告、提案などを含めることができます。
 ```
 
-### Frontmatter Fields
+### フロントマターフィールド
 
-| Field | Required | Values | Description |
+| フィールド | 必須 | 値 | 説明 |
 |-------|----------|--------|-------------|
-| name | Yes | kebab-case string | Unique identifier (verb-first: warn-*, block-*, require-*) |
-| enabled | Yes | true/false | Toggle without deleting |
-| event | Yes | bash/file/stop/prompt/all | Which hook event triggers this |
-| action | No | warn/block | warn (default) shows message; block prevents operation |
-| pattern | Yes* | regex string | Pattern to match (*or use conditions for complex rules) |
+| name | はい | ケバブケース文字列 | 一意の識別子（動詞先頭: warn-*、block-*、require-*） |
+| enabled | はい | true/false | 削除せずにトグル |
+| event | はい | bash/file/stop/prompt/all | どのフックイベントでトリガーするか |
+| action | いいえ | warn/block | warn（デフォルト）はメッセージを表示、blockは操作を防止 |
+| pattern | はい* | 正規表現文字列 | マッチするパターン（*複雑なルールにはconditionsを使用） |
 
-### Advanced Format (Multiple Conditions)
+### 高度な形式（複数条件）
 
 ```markdown
 ---
@@ -51,72 +51,72 @@ conditions:
     pattern: API_KEY
 ---
 
-You're adding an API key to a .env file. Ensure this file is in .gitignore!
+.envファイルにAPIキーを追加しようとしています。このファイルが.gitignoreに含まれていることを確認してください！
 ```
 
-**Condition fields by event:**
+**イベント別の条件フィールド：**
 - bash: `command`
-- file: `file_path`, `new_text`, `old_text`, `content`
+- file: `file_path`、`new_text`、`old_text`、`content`
 - prompt: `user_prompt`
 
-**Operators:** `regex_match`, `contains`, `equals`, `not_contains`, `starts_with`, `ends_with`
+**演算子:** `regex_match`、`contains`、`equals`、`not_contains`、`starts_with`、`ends_with`
 
-All conditions must match for rule to trigger.
+ルールがトリガーされるには、すべての条件が一致する必要があります。
 
-## Event Type Guide
+## イベントタイプガイド
 
-### bash Events
-Match Bash command patterns:
-- Dangerous commands: `rm\s+-rf`, `dd\s+if=`, `mkfs`
-- Privilege escalation: `sudo\s+`, `su\s+`
-- Permission issues: `chmod\s+777`
+### bash イベント
+Bashコマンドパターンにマッチ：
+- 危険なコマンド: `rm\s+-rf`、`dd\s+if=`、`mkfs`
+- 権限昇格: `sudo\s+`、`su\s+`
+- パーミッション問題: `chmod\s+777`
 
-### file Events
-Match Edit/Write/MultiEdit operations:
-- Debug code: `console\.log\(`, `debugger`
-- Security risks: `eval\(`, `innerHTML\s*=`
-- Sensitive files: `\.env$`, `credentials`, `\.pem$`
+### file イベント
+Edit/Write/MultiEdit操作にマッチ：
+- デバッグコード: `console\.log\(`、`debugger`
+- セキュリティリスク: `eval\(`、`innerHTML\s*=`
+- 機密ファイル: `\.env$`、`credentials`、`\.pem$`
 
-### stop Events
-Completion checks and reminders. Pattern `.*` matches always.
+### stop イベント
+完了チェックとリマインダー。パターン `.*` は常にマッチ。
 
-### prompt Events
-Match user prompt content for workflow enforcement.
+### prompt イベント
+ワークフロー強制のためにユーザープロンプトコンテンツにマッチ。
 
-## Pattern Writing Tips
+## パターン記述のヒント
 
-### Regex Basics
-- Escape special chars: `.` to `\.`, `(` to `\(`
-- `\s` whitespace, `\d` digit, `\w` word char
-- `+` one or more, `*` zero or more, `?` optional
-- `|` OR operator
+### 正規表現の基本
+- 特殊文字のエスケープ: `.` → `\.`、`(` → `\(`
+- `\s` 空白、`\d` 数字、`\w` 単語文字
+- `+` 1つ以上、`*` 0個以上、`?` オプション
+- `|` OR演算子
 
-### Common Pitfalls
-- **Too broad**: `log` matches "login", "dialog" — use `console\.log\(`
-- **Too specific**: `rm -rf /tmp` — use `rm\s+-rf`
-- **YAML escaping**: Use unquoted patterns; quoted strings need `\\s`
+### よくある落とし穴
+- **広すぎる**: `log` は "login"、"dialog" にもマッチする — `console\.log\(` を使用
+- **具体的すぎる**: `rm -rf /tmp` — `rm\s+-rf` を使用
+- **YAMLエスケープ**: クォートなしのパターンを使用。クォートされた文字列には `\\\\s` が必要
 
-### Testing
+### テスト
 ```bash
 python3 -c "import re; print(re.search(r'your_pattern', 'test text'))"
 ```
 
-## File Organization
+## ファイル構成
 
-- **Location**: `.claude/` directory in project root
-- **Naming**: `.claude/hookify.{descriptive-name}.local.md`
-- **Gitignore**: Add `.claude/*.local.md` to `.gitignore`
+- **場所**: プロジェクトルートの `.claude/` ディレクトリ
+- **命名**: `.claude/hookify.{descriptive-name}.local.md`
+- **Gitignore**: `.gitignore` に `.claude/*.local.md` を追加
 
-## Commands
+## コマンド
 
-- `/hookify [description]` - Create new rules (auto-analyzes conversation if no args)
-- `/hookify-list` - View all rules in table format
-- `/hookify-configure` - Toggle rules on/off interactively
-- `/hookify-help` - Full documentation
+- `/hookify [description]` - 新しいルールを作成（引数なしの場合は会話を自動分析）
+- `/hookify-list` - すべてのルールをテーブル形式で表示
+- `/hookify-configure` - ルールのオン/オフをインタラクティブに切り替え
+- `/hookify-help` - 完全なドキュメント
 
-## Quick Reference
+## クイックリファレンス
 
-Minimum viable rule:
+最小限のルール：
 ```markdown
 ---
 name: my-rule
@@ -124,5 +124,5 @@ enabled: true
 event: bash
 pattern: dangerous_command
 ---
-Warning message here
+ここに警告メッセージ
 ```

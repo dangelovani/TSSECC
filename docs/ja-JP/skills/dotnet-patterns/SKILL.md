@@ -4,35 +4,35 @@ description: C#と.NET言語固有のパターン、規約、依存性注入、a
 origin: ECC
 ---
 
-# .NET Development Patterns
+# .NET 開発パターン
 
-Idiomatic C# and .NET patterns for building robust, performant, and maintainable applications.
+堅牢で高性能、保守可能なアプリケーションを構築するための慣用的なC#と.NETパターン。
 
-## When to Activate
+## いつ使用するか
 
-- Writing new C# code
-- Reviewing C# code
-- Refactoring existing .NET applications
-- Designing service architectures with ASP.NET Core
+- 新しいC#コードを書くとき
+- C#コードをレビューするとき
+- 既存の.NETアプリケーションをリファクタリングするとき
+- ASP.NET Coreでサービスアーキテクチャを設計するとき
 
-## Core Principles
+## 基本原則
 
-### 1. Prefer Immutability
+### 1. 不変性を優先する
 
-Use records and init-only properties for data models. Mutability should be an explicit, justified choice.
+データモデルにはレコードとinit専用プロパティを使用する。可変性は明示的で正当な理由がある場合のみ選択すべき。
 
 ```csharp
-// Good: Immutable value object
+// 良い例: 不変な値オブジェクト
 public sealed record Money(decimal Amount, string Currency);
 
-// Good: Immutable DTO with init setters
+// 良い例: initセッターによる不変なDTO
 public sealed class CreateOrderRequest
 {
     public required string CustomerId { get; init; }
     public required IReadOnlyList<OrderItem> Items { get; init; }
 }
 
-// Bad: Mutable model with public setters
+// 悪い例: パブリックセッターを持つ可変モデル
 public class Order
 {
     public string CustomerId { get; set; }
@@ -40,12 +40,12 @@ public class Order
 }
 ```
 
-### 2. Explicit Over Implicit
+### 2. 暗黙より明示
 
-Be clear about nullability, access modifiers, and intent.
+null許容性、アクセス修飾子、意図を明確にする。
 
 ```csharp
-// Good: Explicit access modifiers and nullability
+// 良い例: 明示的なアクセス修飾子とnull許容性
 public sealed class UserService
 {
     private readonly IUserRepository _repository;
@@ -64,12 +64,12 @@ public sealed class UserService
 }
 ```
 
-### 3. Depend on Abstractions
+### 3. 抽象に依存する
 
-Use interfaces for service boundaries. Register via DI container.
+サービス境界にはインターフェースを使用する。DIコンテナ経由で登録する。
 
 ```csharp
-// Good: Interface-based dependency
+// 良い例: インターフェースベースの依存関係
 public interface IOrderRepository
 {
     Task<Order?> FindByIdAsync(Guid id, CancellationToken cancellationToken);
@@ -77,16 +77,16 @@ public interface IOrderRepository
     Task AddAsync(Order order, CancellationToken cancellationToken);
 }
 
-// Registration
+// 登録
 builder.Services.AddScoped<IOrderRepository, SqlOrderRepository>();
 ```
 
-## Async/Await Patterns
+## Async/Await パターン
 
-### Proper Async Usage
+### 適切なAsync使用法
 
 ```csharp
-// Good: Async all the way, with CancellationToken
+// 良い例: 末端までasync、CancellationToken付き
 public async Task<OrderSummary> GetOrderSummaryAsync(
     Guid orderId,
     CancellationToken cancellationToken)
@@ -99,18 +99,18 @@ public async Task<OrderSummary> GetOrderSummaryAsync(
     return new OrderSummary(order, customer);
 }
 
-// Bad: Blocking on async
+// 悪い例: asyncのブロッキング
 public OrderSummary GetOrderSummary(Guid orderId)
 {
-    var order = _repository.FindByIdAsync(orderId, CancellationToken.None).Result; // Deadlock risk
+    var order = _repository.FindByIdAsync(orderId, CancellationToken.None).Result; // デッドロックの危険
     return new OrderSummary(order);
 }
 ```
 
-### Parallel Async Operations
+### 並列非同期操作
 
 ```csharp
-// Good: Concurrent independent operations
+// 良い例: 独立した操作の同時実行
 public async Task<DashboardData> LoadDashboardAsync(CancellationToken cancellationToken)
 {
     var ordersTask = _orderService.GetRecentAsync(cancellationToken);
@@ -126,9 +126,9 @@ public async Task<DashboardData> LoadDashboardAsync(CancellationToken cancellati
 }
 ```
 
-## Options Pattern
+## オプションパターン
 
-Bind configuration sections to strongly-typed objects.
+設定セクションを厳密に型付けされたオブジェクトにバインドする。
 
 ```csharp
 public sealed class SmtpOptions
@@ -141,20 +141,20 @@ public sealed class SmtpOptions
     public bool UseSsl { get; init; } = true;
 }
 
-// Registration
+// 登録
 builder.Services.Configure<SmtpOptions>(
     builder.Configuration.GetSection(SmtpOptions.SectionName));
 
-// Usage via injection
+// インジェクション経由での使用
 public class EmailService(IOptions<SmtpOptions> options)
 {
     private readonly SmtpOptions _smtp = options.Value;
 }
 ```
 
-## Result Pattern
+## リザルトパターン
 
-Return explicit success/failure instead of throwing for expected failures.
+期待される失敗に対して例外をスローする代わりに、明示的な成功/失敗を返す。
 
 ```csharp
 public sealed record Result<T>
@@ -170,11 +170,11 @@ public sealed record Result<T>
     public static Result<T> Failure(string error) => new(error);
 }
 
-// Usage
+// 使用例
 public async Task<Result<Order>> PlaceOrderAsync(CreateOrderRequest request)
 {
     if (request.Items.Count == 0)
-        return Result<Order>.Failure("Order must contain at least one item");
+        return Result<Order>.Failure("注文には少なくとも1つのアイテムが必要です");
 
     var order = Order.Create(request);
     await _repository.AddAsync(order, CancellationToken.None);
@@ -182,7 +182,7 @@ public async Task<Result<Order>> PlaceOrderAsync(CreateOrderRequest request)
 }
 ```
 
-## Repository Pattern with EF Core
+## EF Coreを使用したリポジトリパターン
 
 ```csharp
 public sealed class SqlOrderRepository : IOrderRepository
@@ -218,10 +218,10 @@ public sealed class SqlOrderRepository : IOrderRepository
 }
 ```
 
-## Middleware and Pipeline
+## ミドルウェアとパイプライン
 
 ```csharp
-// Custom middleware
+// カスタムミドルウェア
 public sealed class RequestTimingMiddleware
 {
     private readonly RequestDelegate _next;
@@ -244,7 +244,7 @@ public sealed class RequestTimingMiddleware
         {
             stopwatch.Stop();
             _logger.LogInformation(
-                "Request {Method} {Path} completed in {ElapsedMs}ms with status {StatusCode}",
+                "リクエスト {Method} {Path} が {ElapsedMs}ms で完了、ステータス {StatusCode}",
                 context.Request.Method,
                 context.Request.Path,
                 stopwatch.ElapsedMilliseconds,
@@ -254,10 +254,10 @@ public sealed class RequestTimingMiddleware
 }
 ```
 
-## Minimal API Patterns
+## Minimal API パターン
 
 ```csharp
-// Organized with route groups
+// ルートグループによる整理
 var orders = app.MapGroup("/api/orders")
     .RequireAuthorization()
     .WithTags("Orders");
@@ -285,10 +285,10 @@ orders.MapPost("/", async (
 });
 ```
 
-## Guard Clauses
+## ガード句
 
 ```csharp
-// Good: Early returns with clear validation
+// 良い例: 明確なバリデーションによる早期リターン
 public async Task<ProcessResult> ProcessPaymentAsync(
     PaymentRequest request,
     CancellationToken cancellationToken)
@@ -296,26 +296,26 @@ public async Task<ProcessResult> ProcessPaymentAsync(
     ArgumentNullException.ThrowIfNull(request);
 
     if (request.Amount <= 0)
-        throw new ArgumentOutOfRangeException(nameof(request.Amount), "Amount must be positive");
+        throw new ArgumentOutOfRangeException(nameof(request.Amount), "金額は正の値でなければなりません");
 
     if (string.IsNullOrWhiteSpace(request.Currency))
-        throw new ArgumentException("Currency is required", nameof(request.Currency));
+        throw new ArgumentException("通貨は必須です", nameof(request.Currency));
 
-    // Happy path continues here without nesting
+    // ハッピーパスはネストなしで続行
     var gateway = _gatewayFactory.Create(request.Currency);
     return await gateway.ChargeAsync(request, cancellationToken);
 }
 ```
 
-## Anti-Patterns to Avoid
+## 避けるべきアンチパターン
 
-| Anti-Pattern | Fix |
+| アンチパターン | 修正方法 |
 |---|---|
-| `async void` methods | Return `Task` (except event handlers) |
-| `.Result` or `.Wait()` | Use `await` |
-| `catch (Exception) { }` | Handle or rethrow with context |
-| `new Service()` in constructors | Use constructor injection |
-| `public` fields | Use properties with appropriate accessors |
-| `dynamic` in business logic | Use generics or explicit types |
-| Mutable `static` state | Use DI scoping or `ConcurrentDictionary` |
-| `string.Format` in loops | Use `StringBuilder` or interpolated string handlers |
+| `async void` メソッド | `Task` を返す（イベントハンドラを除く） |
+| `.Result` や `.Wait()` | `await` を使用する |
+| `catch (Exception) { }` | コンテキスト付きで処理または再スローする |
+| コンストラクタ内の `new Service()` | コンストラクタインジェクションを使用する |
+| `public` フィールド | 適切なアクセサを持つプロパティを使用する |
+| ビジネスロジック内の `dynamic` | ジェネリクスまたは明示的な型を使用する |
+| 可変な `static` ステート | DIスコーピングまたは `ConcurrentDictionary` を使用する |
+| ループ内の `string.Format` | `StringBuilder` または補間文字列ハンドラを使用する |

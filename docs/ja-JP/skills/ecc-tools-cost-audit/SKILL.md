@@ -4,157 +4,157 @@ description: ECC ツール、エージェント、スキル、および実装の
 origin: ECC
 ---
 
-# ECC Tools Cost Audit
+# ECC ツール コスト監査
 
-Use this skill when the user suspects the ECC Tools GitHub App is burning cost, over-creating PRs, bypassing usage limits, or routing free users into premium analysis paths.
+ECC Tools GitHubアプリがコストを浪費している、PRを過剰に作成している、使用量制限を回避している、または無料ユーザーをプレミアム分析パスに誘導していると疑われる場合にこのスキルを使用してください。
 
-This is a focused operator workflow for the sibling [ECC-Tools](../../ECC-Tools) repo. It is not a generic billing skill and it is not a repo-wide code review pass.
+これは姉妹リポジトリ [ECC-Tools](../../ECC-Tools) 向けの焦点を絞ったオペレーターワークフローです。汎用的な課金スキルではなく、リポジトリ全体のコードレビューパスでもありません。
 
-## Skill Stack
+## スキルスタック
 
-Pull these ECC-native skills into the workflow when relevant:
+関連する場合、以下のECCネイティブスキルをワークフローに組み込んでください：
 
-- `autonomous-loops` for bounded multi-step audits that cross webhooks, queues, billing, and retries
-- `agentic-engineering` for tracing the request path into discrete, provable units
-- `customer-billing-ops` when repo behavior and customer-impact math must be separated cleanly
-- `search-first` before inventing helpers or re-implementing repo-local utilities
-- `security-review` when auth, usage gates, entitlements, or secrets are touched
-- `verification-loop` for proving rerun safety and exact post-fix state
-- `tdd-workflow` when the fix needs regression coverage in the worker, router, or billing paths
+- `autonomous-loops` Webhook、キュー、課金、リトライを横断する範囲限定のマルチステップ監査用
+- `agentic-engineering` リクエストパスを個別の証明可能なユニットに追跡する用
+- `customer-billing-ops` リポジトリの動作と顧客影響の計算を明確に分離する必要がある場合
+- `search-first` ヘルパーを発明したりリポジトリローカルのユーティリティを再実装する前に
+- `security-review` 認証、使用量ゲート、エンタイトルメント、またはシークレットに触れる場合
+- `verification-loop` 再実行の安全性と修正後の正確な状態を証明する用
+- `tdd-workflow` 修正にワーカー、ルーター、または課金パスの回帰カバレッジが必要な場合
 
-## When To Use
+## いつ使用するか
 
-- user says ECC Tools burn rate, PR recursion, over-created PRs, usage-limit bypass, or premium-model leakage
-- the task is in the sibling `ECC-Tools` repo and depends on webhook handlers, queue workers, usage reservation, PR creation logic, or paid-gate enforcement
-- a customer report says the app created too many PRs, billed incorrectly, or analyzed code without producing a usable result
+- ユーザーがECC Toolsの消費率、PR再帰、過剰作成PR、使用量制限バイパス、またはプレミアムモデルの漏洩を言及する場合
+- タスクが姉妹リポジトリ `ECC-Tools` にあり、Webhookハンドラー、キューワーカー、使用量予約、PR作成ロジック、または有料ゲートの適用に依存する場合
+- 顧客レポートで、アプリがPRを多く作成しすぎた、課金が不正確だった、またはコードを分析したが使える結果を生成しなかったと報告される場合
 
-## Scope Guardrails
+## スコープガードレール
 
-- work in the sibling `ECC-Tools` repo, not in `everything-claude-code`
-- start read-only unless the user clearly asked for a fix
-- do not mutate unrelated billing, checkout, or UI flows while tracing analysis burn
-- treat app-generated branches and app-generated PRs as red-flag recursion paths until proved otherwise
-- separate three things explicitly:
-  - repo-side burn root cause
-  - customer-facing billing impact
-  - product or entitlement gaps that need backlog follow-up
+- `everything-claude-code` ではなく、姉妹リポジトリ `ECC-Tools` 内で作業する
+- ユーザーが明確に修正を依頼しない限り、読み取り専用で開始する
+- 分析の消費を追跡している間、無関係な課金、チェックアウト、またはUIフローを変更しない
+- アプリ生成のブランチとアプリ生成のPRは、安全が証明されるまでレッドフラグの再帰パスとして扱う
+- 以下の3つを明示的に分離する：
+  - リポジトリ側の消費根本原因
+  - 顧客向け課金への影響
+  - バックログフォローアップが必要な製品またはエンタイトルメントのギャップ
 
-## Workflow
+## ワークフロー
 
-### 1. Freeze repo scope
+### 1. リポジトリスコープの確定
 
-- switch into the sibling `ECC-Tools` repo
-- check branch and local diff first
-- identify the exact surface under audit:
-  - webhook router
-  - queue producer
-  - queue consumer
-  - PR creation path
-  - usage reservation / billing path
-  - model routing path
+- 姉妹リポジトリ `ECC-Tools` に切り替える
+- まずブランチとローカルdiffを確認する
+- 監査対象の正確なサーフェスを特定する：
+  - Webhookルーター
+  - キュープロデューサー
+  - キューコンシューマー
+  - PR作成パス
+  - 使用量予約/課金パス
+  - モデルルーティングパス
 
-### 2. Trace ingress before theorizing
+### 2. 理論化する前にイングレスを追跡する
 
-- inspect `src/index.*` or the main entrypoint first
-- map every enqueue path before suggesting a fix
-- confirm which GitHub events share a queue type
-- confirm whether push, pull_request, synchronize, comment, or manual re-run events can converge on the same expensive path
+- まず `src/index.*` またはメインエントリポイントを検査する
+- 修正を提案する前にすべてのエンキューパスをマッピングする
+- どのGitHubイベントがキュータイプを共有しているか確認する
+- push、pull_request、synchronize、comment、または手動再実行イベントが同じ高コストパスに収束する可能性があるか確認する
 
-### 3. Trace the worker and side effects
+### 3. ワーカーと副作用の追跡
 
-- inspect the queue consumer or scheduled worker that handles analysis
-- confirm whether a queued analysis always ends in:
-  - PR creation
-  - branch creation
-  - file updates
-  - premium model calls
-  - usage increments
-- if analysis can spend tokens and then fail before output is persisted, classify it as burn-with-broken-output
+- 分析を処理するキューコンシューマーまたはスケジュールドワーカーを検査する
+- キューに入れられた分析が常に以下のいずれかで終了するか確認する：
+  - PR作成
+  - ブランチ作成
+  - ファイル更新
+  - プレミアムモデル呼び出し
+  - 使用量増加
+- 分析がトークンを消費してから出力の永続化前に失敗する可能性がある場合、それを「出力が壊れた状態での消費」として分類する
 
-### 4. Audit the high-signal burn paths
+### 4. 高シグナル消費パスの監査
 
-#### PR multiplication
+#### PRの増殖
 
-- inspect PR helpers and branch naming
-- check dedupe, synchronize-event handling, and existing-PR reuse
-- if app-generated branches can re-enter analysis, treat that as a priority-0 recursion risk
+- PRヘルパーとブランチ命名を検査する
+- 重複排除、synchronizeイベント処理、既存PRの再利用を確認する
+- アプリ生成のブランチが分析に再入する場合、それを優先度0の再帰リスクとして扱う
 
-#### Quota bypass
+#### クォータバイパス
 
-- inspect where quota is checked versus where usage is reserved or incremented
-- if quota is checked before enqueue but usage is charged only inside the worker, treat concurrent front-door passes as a real race
+- クォータがどこでチェックされ、使用量がどこで予約または増加されるかを検査する
+- クォータがエンキュー前にチェックされるが使用量がワーカー内でのみ課金される場合、同時フロントドアパスを実際のレースとして扱う
 
-#### Premium-model leakage
+#### プレミアムモデルの漏洩
 
-- inspect model selection, tier branching, and provider routing
-- verify whether free or capped users can still hit premium analyzers when premium keys are present
+- モデル選択、ティア分岐、プロバイダールーティングを検査する
+- プレミアムキーが存在する場合に、無料またはキャップ付きユーザーがプレミアムアナライザーにアクセスできるかどうかを確認する
 
-#### Retry burn
+#### リトライの消費
 
-- inspect retry loops, duplicate queue jobs, and deterministic failure reruns
-- if the same non-transient error can spend analysis repeatedly, fix that before quality improvements
+- リトライループ、重複キュージョブ、決定論的失敗の再実行を検査する
+- 同じ非一時的エラーが繰り返し分析を消費する場合、品質改善の前にそれを修正する
 
-### 5. Fix in burn order
+### 5. 消費順に修正する
 
-If the user asked for code changes, prioritize fixes in this order:
+ユーザーがコード変更を依頼した場合、以下の順序で修正を優先する：
 
-1. stop automatic PR multiplication
-2. stop quota bypass
-3. stop premium leakage
-4. stop duplicate-job fanout and pointless retries
-5. close rerun/update safety gaps
+1. 自動PR増殖を停止する
+2. クォータバイパスを停止する
+3. プレミアム漏洩を停止する
+4. 重複ジョブのファンアウトと無意味なリトライを停止する
+5. 再実行/更新の安全性ギャップを閉じる
 
-Keep the pass bounded to one to three direct fixes unless the same root cause clearly spans multiple files.
+同じ根本原因が明確に複数ファイルに及ぶ場合を除き、パスを1〜3の直接修正に限定する。
 
-### 6. Verify with the smallest proving steps
+### 6. 最小限の証明ステップで検証する
 
-- rerun only the targeted tests or integration slices that cover the changed path
-- verify whether the burn path is now:
-  - blocked
-  - deduped
-  - downgraded to cheaper analysis
-  - or rejected early
-- state the final status exactly:
-  - changed locally
-  - verified locally
-  - pushed
-  - deployed
-  - still blocked
+- 変更されたパスをカバーする対象テストまたは統合スライスのみを再実行する
+- 消費パスが現在以下のいずれかであるか検証する：
+  - ブロックされた
+  - 重複排除された
+  - より安価な分析にダウングレードされた
+  - 早期に拒否された
+- 最終ステータスを正確に述べる：
+  - ローカルで変更済み
+  - ローカルで検証済み
+  - プッシュ済み
+  - デプロイ済み
+  - まだブロック中
 
-## High-Signal Failure Patterns
+## 高シグナル障害パターン
 
-### 1. One queue type for all triggers
+### 1. すべてのトリガーに1つのキュータイプ
 
-If pushes, PR syncs, and manual audits all enqueue the same job and the worker always creates a PR, analysis equals PR spam.
+プッシュ、PR同期、手動監査がすべて同じジョブをエンキューし、ワーカーが常にPRを作成する場合、分析＝PRスパムとなる。
 
-### 2. Post-enqueue usage reservation
+### 2. エンキュー後の使用量予約
 
-If usage is checked at the front door but only incremented in the worker, concurrent requests can all pass the gate and exceed quota.
+使用量がフロントドアでチェックされるがワーカー内でのみ増加される場合、同時リクエストはすべてゲートを通過しクォータを超過する可能性がある。
 
-### 3. Free tier on premium path
+### 3. プレミアムパス上の無料ティア
 
-If free queued jobs can still route into Anthropic or another premium provider when keys exist, that is real spend leakage even if the user never sees the premium result.
+無料のキュー済みジョブがキーが存在する場合にAnthropicや別のプレミアムプロバイダーにルーティングされる場合、ユーザーがプレミアム結果を見なくても実際の支出漏洩となる。
 
-### 4. App-generated branches re-enter the webhook
+### 4. アプリ生成のブランチがWebhookに再入する
 
-If `pull_request.synchronize`, branch pushes, or comment-triggered runs fire on app-owned branches, the app can recursively analyze its own output.
+`pull_request.synchronize`、ブランチプッシュ、またはコメントトリガーの実行がアプリ所有のブランチで発火する場合、アプリは自身の出力を再帰的に分析する可能性がある。
 
-### 5. Expensive work before persistence safety
+### 5. 永続化安全性前の高コスト作業
 
-If the system can spend tokens and then fail on PR creation, file update, or branch collision, it is burning cost without shipping value.
+システムがトークンを消費した後、PR作成、ファイル更新、またはブランチ衝突で失敗する場合、価値を出荷せずにコストを消費している。
 
-## Pitfalls
+## 落とし穴
 
-- do not begin with broad repo wandering; settle webhook -> queue -> worker first
-- do not mix customer billing inference with code-backed product truth
-- do not fix lower-value quality issues before the highest-burn path is contained
-- do not claim burn is fixed until the narrow proving step was rerun
-- do not push or deploy unless the user asked
-- do not touch unrelated repo-local changes if they are already in progress
+- 広範なリポジトリ探索から始めない — まずWebhook → キュー → ワーカーを確定する
+- 顧客課金の推論とコードに裏付けされた製品の真実を混同しない
+- 最も高い消費パスが封じ込められる前に、低価値の品質問題を修正しない
+- 狭い証明ステップが再実行されるまで消費が修正されたと主張しない
+- ユーザーが依頼しない限りプッシュまたはデプロイしない
+- 進行中の無関係なリポジトリローカルの変更に触れない
 
-## Verification
+## 検証
 
-- root causes cite exact file paths and code areas
-- fixes are ordered by burn impact, not code neatness
-- proving commands are named
-- final status distinguishes local change, verification, push, and deployment
+- 根本原因は正確なファイルパスとコード領域を引用する
+- 修正はコードの整頓さではなく消費影響順に並べる
+- 証明コマンドが名前付きである
+- 最終ステータスはローカル変更、検証、プッシュ、デプロイを区別する

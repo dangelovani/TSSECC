@@ -4,93 +4,93 @@ description: 投資家向けマテリアル、ピッチデック、財務プレ�
 origin: ECC
 ---
 
-# Investor Materials
+# 投資家向けマテリアル
 
-Build investor-facing materials that are consistent, credible, and easy to defend.
+一貫性があり、信頼性が高く、説明が容易な投資家向け資料を構築します。
 
-## When to Activate
+## いつ使用するか
 
-- creating or revising a pitch deck
-- writing an investor memo or one-pager
-- building a financial model, milestone plan, or use-of-funds table
-- answering accelerator or incubator application questions
-- aligning multiple fundraising docs around one source of truth
+- ピッチデック（プレゼン資料）を作成または修正するとき
+- 投資家向けメモ（インベスターメモ）やワンペーパー（1枚の要約書）を書くとき
+- 財務モデル、マイルストーン計画、または資金使途（use-of-funds）テーブルを作成するとき
+- アクセラレーターやインキュベーターの応募質問に答えるとき
+- 複数の資金調達ドキュメント間で、単一の真実のソース（Source of Truth）に基づいて整合性をとるとき
 
-## Golden Rule
+## 黄金律
 
-All investor materials must agree with each other.
+すべての投資家向け資料は互いに一致していなければなりません。
 
-Create or confirm a single source of truth before writing:
-- traction metrics
-- pricing and revenue assumptions
-- raise size and instrument
-- use of funds
-- team bios and titles
-- milestones and timelines
+作成または執筆を開始する前に、単一の真実のソース（信頼できる情報源）を定義または確認してください：
+- トラクションメトリクス（実績数値）
+- 価格設定および収益の前提条件
+- 調達規模と調達手法（J-KISS、コンバーティブルノート、株式等）
+- 資金の使途
+- チームメンバーの経歴と役職
+- マイルストーンとタイムライン
 
-If conflicting numbers appear, stop and resolve them before drafting.
+もし矛盾する数値がある場合は、執筆前に作業を中断して調整してください。
 
-## Core Workflow
+## コアワークフロー
 
-1. inventory the canonical facts
-2. identify missing assumptions
-3. choose the asset type
-4. draft the asset with explicit logic
-5. cross-check every number against the source of truth
+1. 正規の事実・数値を整理（インベントリ化）する
+2. 不足している前提条件を特定する
+3. 作成するアセット（資料）の種類を選択する
+4. 明確なロジックに基づいて資料の下書きを作成する
+5. すべての数値を真実のソースと照合する（クロスチェック）
 
-## Asset Guidance
+## アセット別ガイド
 
-### Pitch Deck
-Recommended flow:
-1. company + wedge
-2. problem
-3. solution
-4. product / demo
-5. market
-6. business model
-7. traction
-8. team
-9. competition / differentiation
-10. ask
-11. use of funds / milestones
-12. appendix
+### ピッチデック
+推奨されるスライド構成フロー：
+1. 会社概要 ＋ 最初の切り口（Wedge）
+2. 課題（Problem）
+3. 解決策（Solution）
+4. プロダクト / デモ（Product / Demo）
+5. 市場規模（Market）
+6. ビジネスモデル（Business Model）
+7. 実績（Traction）
+8. チーム（Team）
+9. 競合 / 差別化要因（Competition / Differentiation）
+10. 調達条件の提示（Ask）
+11. 資金使途 / マイルストーン（Use of funds / Milestones）
+12. 付録（Appendix）
 
-If the user wants a web-native deck, pair this skill with `frontend-slides`.
+ユーザーがWebネイティブなデックを希望する場合は、このスキルと `frontend-slides` を組み合わせてください。
 
-### One-Pager / Memo
-- state what the company does in one clean sentence
-- show why now
-- include traction and proof points early
-- make the ask precise
-- keep claims easy to verify
+### ワンペーパー / メモ
+- 会社が何をしているのかを、簡潔で洗練された1つの文章で記述する
+- 「なぜ今なのか（Why now）」を示す
+- トラクションと実績の証拠を早い段階に含める
+- 調達条件（Ask）を明確にする
+- 主張の検証を容易にする
 
-### Financial Model
-Include:
-- explicit assumptions
-- bear / base / bull cases when useful
-- clean layer-by-layer revenue logic
-- milestone-linked spending
-- sensitivity analysis where the decision hinges on assumptions
+### 財務モデル
+以下を含めること：
+- 明示的な前提条件
+- 必要に応じて、ベア（弱気）/ ベース（基本）/ ブル（強気）ケース
+- 明確でレイヤー化された収益ロジック
+- マイルストーンと連動した支出計画
+- 前提条件によって意思決定が左右される部分に対する感度分析（サニティチェック）
 
-### Accelerator Applications
-- answer the exact question asked
-- prioritize traction, insight, and team advantage
-- avoid puffery
-- keep internal metrics consistent with the deck and model
+### アクセラレーター応募
+- 尋ねられた質問に正確に回答する
+- トラクション、独自の洞察、チームの強みを優先する
+- 誇大表現を避ける
+- 内部メトリクスがデックやモデルと矛盾しないようにする
 
-## Red Flags to Avoid
+## 避けるべきレッドフラグ（危険信号）
 
-- unverifiable claims
-- fuzzy market sizing without assumptions
-- inconsistent team roles or titles
-- revenue math that does not sum cleanly
-- inflated certainty where assumptions are fragile
+- 検証不可能な主張
+- 前提条件の示されていない曖昧な市場規模（TAM）の算出
+- メンバーの役割や役職の不一致
+- 計算の合わない収益ロジック
+- 前提条件が脆弱な部分に対する過剰な確実性の表示
 
-## Quality Gate
+## 品質ゲート
 
-Before delivering:
-- every number matches the current source of truth
-- use of funds and revenue layers sum correctly
-- assumptions are visible, not buried
-- the story is clear without hype language
-- the final asset is defensible in a partner meeting
+資料を提供する前に以下を確認します：
+- すべての数値が現在の真実のソースと一致していること
+- 資金使途と収益レイヤーの合計が正しく計算されていること
+- 前提条件が隠されることなく、可視化されていること
+- 誇張表現を使わずに、事実に基づいた明確なストーリーになっていること
+- パートナーミーティングで質問された際に、論理的に説明できる状態になっていること

@@ -5,36 +5,36 @@ origin: Health1 Super Speciality Hospitals — contributed by Dr. Keyur Patel
 version: "1.0.0"
 ---
 
-# Healthcare PHI/PII Compliance Patterns
+# ヘルスケアPHI/PIIコンプライアンスパターン
 
-Patterns for protecting patient data, clinician data, and financial data in healthcare applications. Applicable to HIPAA (US), DISHA (India), GDPR (EU), and general healthcare data protection.
+ヘルスケアアプリケーションにおける患者データ、医療従事者データ、および財務データを保護するためのパターン。HIPAA（米国）、DISHA（インド）、GDPR（欧州）、および一般的なヘルスケアデータ保護規制に適用されます。
 
-## When to Use
+## いつ使用するか
 
-- Building any feature that touches patient records
-- Implementing access control or authentication for clinical systems
-- Designing database schemas for healthcare data
-- Building APIs that return patient or clinician data
-- Implementing audit trails or logging
-- Reviewing code for data exposure vulnerabilities
-- Setting up Row-Level Security (RLS) for multi-tenant healthcare systems
+- 患者の記録（カルテ）に触れる機能の構築
+- 臨床システムへのアクセス制御や認証の実装
+- ヘルスケアデータ用のデータベーススキーマ設計
+- 患者や医療従事者のデータを返すAPIの構築
+- 監査証跡（オーディットトレイル）やログの実装
+- データ露出の脆弱性に対するコードレビューの実施
+- マルチテナント・ヘルスケアシステムにおける行レベルセキュリティ（RLS）の設定
 
-## How It Works
+## 動作方法
 
-Healthcare data protection operates on three layers: **classification** (what is sensitive), **access control** (who can see it), and **audit** (who did see it).
+ヘルスケアデータ保護は、**分類**（何が機密か）、**アクセス制御**（誰がそれを見られるか）、および**監査**（誰がそれを見たか）の3つのレイヤーで機能します。
 
-### Data Classification
+### データ分類
 
-**PHI (Protected Health Information)** — any data that can identify a patient AND relates to their health: patient name, date of birth, address, phone, email, national ID numbers (SSN, Aadhaar, NHS number), medical record numbers, diagnoses, medications, lab results, imaging, insurance policy and claim details, appointment and admission records, or any combination of the above.
+**PHI (Protected Health Information: 保護医療情報)** — 患者を特定可能であり、かつ健康状態に関連するすべてのデータ: 患者の名前、生年月日、住所、電話番号、メールアドレス、国民識別番号（SSN、Aadhaar、NHS番号など）、カルテ番号（MRN）、診断、服薬情報、検査結果、画像データ、保険ポリシーと請求の詳細、予約と入院の記録、またはこれらを組み合わせたデータ。
 
-**PII (Non-patient-sensitive data)** in healthcare systems: clinician/staff personal details, doctor fee structures and payout amounts, employee salary and bank details, vendor payment information.
+**PII (Personally Identifiable Information: 個人特定情報)** — ヘルスケアシステムにおける非患者機密データ: 医療従事者/スタッフの個人詳細、医師の報酬体系と支払額、従業員の給与と銀行口座情報、ベンダーの支払い情報。
 
-### Access Control: Row-Level Security
+### アクセス制御: 行レベルセキュリティ (RLS)
 
 ```sql
 ALTER TABLE patients ENABLE ROW LEVEL SECURITY;
 
--- Scope access by facility
+-- 施設別でアクセス範囲を制限
 CREATE POLICY "staff_read_own_facility"
   ON patients FOR SELECT TO authenticated
   USING (facility_id IN (
@@ -42,16 +42,16 @@ CREATE POLICY "staff_read_own_facility"
     WHERE user_id = auth.uid() AND role IN ('doctor','nurse','lab_tech','admin')
   ));
 
--- Audit log: insert-only (tamper-proof)
+-- 監査ログ: 挿入のみ（改ざん防止）
 CREATE POLICY "audit_insert_only" ON audit_log FOR INSERT
   TO authenticated WITH CHECK (user_id = auth.uid());
 CREATE POLICY "audit_no_modify" ON audit_log FOR UPDATE USING (false);
 CREATE POLICY "audit_no_delete" ON audit_log FOR DELETE USING (false);
 ```
 
-### Audit Trail
+### 監査証跡 (オーディットトレイル)
 
-Every PHI access or modification must be logged:
+すべてのPHIアクセスまたは変更はログに記録されなければなりません：
 
 ```typescript
 interface AuditEntry {
@@ -67,23 +67,23 @@ interface AuditEntry {
 }
 ```
 
-### Common Leak Vectors
+### 一般的な漏洩経路
 
-**Error messages:** Never include patient-identifying data in error messages thrown to the client. Log details server-side only.
+**エラーメッセージ:** クライアント（ブラウザ等）にスローされるエラーメッセージに、患者を特定できる情報を含めてはなりません。詳細情報はサーバー側でのみログ出力します。
 
-**Console output:** Never log full patient objects. Use opaque internal record IDs (UUIDs) — not medical record numbers, national IDs, or names.
+**コンソール出力:** 患者オブジェクト全体を出力してはなりません。カルテ番号、国民ID、または名前ではなく、不透明な内部レコードID（UUID）を使用します。
 
-**URL parameters:** Never put patient-identifying data in query strings or path segments that could appear in logs or browser history. Use opaque UUIDs only.
+**URLパラメータ:** ログやブラウザ履歴に残る可能性のあるクエリ文字列やパスセグメントに、患者を特定できる情報を含めてはなりません。不透明なUUIDのみを使用します。
 
-**Browser storage:** Never store PHI in localStorage or sessionStorage. Keep PHI in memory only, fetch on demand.
+**ブラウザストレージ:** localStorage や sessionStorage にPHIを保存してはなりません。PHIはメモリ内でのみ保持し、オンデマンドで取得します。
 
-**Service role keys:** Never use the service_role key in client-side code. Always use the anon/publishable key and let RLS enforce access.
+**サービスロールキー (service_role keys):** クライアント側のコードで service_role キー（管理者権限キー）を使用してはなりません。常に anon/publishable キーを使用し、RLSでアクセス制御を強制します。
 
-**Logs and monitoring:** Never log full patient records. Use opaque record IDs only (not medical record numbers). Sanitize stack traces before sending to error tracking services.
+**ログと監視:** 患者の記録全体を出力してはなりません。カルテ番号ではなく、不透明なレコードIDのみを使用します。エラー追跡サービスにスタックトレースを送信する前にサニタイズ（クリーンアップ）します。
 
-### Database Schema Tagging
+### データベーススキーマのタグ付け
 
-Mark PHI/PII columns at the schema level:
+スキーマレベルでPHI/PIIカラムにコメント等を付与して明示します：
 
 ```sql
 COMMENT ON COLUMN patients.name IS 'PHI: patient_name';
@@ -92,54 +92,54 @@ COMMENT ON COLUMN patients.aadhaar IS 'PHI: national_id';
 COMMENT ON COLUMN doctor_payouts.amount IS 'PII: financial';
 ```
 
-### Deployment Checklist
+### デプロイ前チェックリスト
 
-Before every deployment:
-- No PHI in error messages or stack traces
-- No PHI in console.log/console.error
-- No PHI in URL parameters
-- No PHI in browser storage
-- No service_role key in client code
-- RLS enabled on all PHI/PII tables
-- Audit trail for all data modifications
-- Session timeout configured
-- API authentication on all PHI endpoints
-- Cross-facility data isolation verified
+すべてのデプロイ前に以下を確認します：
+- エラーメッセージやスタックトレースにPHIが含まれていないこと
+- console.log や console.error にPHIが含まれていないこと
+- URLパラメータにPHIが含まれていないこと
+- ブラウザストレージにPHIが保存されていないこと
+- クライアントコードに service_role キーが残っていないこと
+- すべてのPHI/PIIテーブルでRLSが有効化されていること
+- すべてのデータ変更に対して監査証跡が記録されていること
+- セッションタイムアウトが設定されていること
+- すべてのPHIエンドポイントでAPI認証が行われていること
+- 施設間のデータ分離が検証されていること
 
-## Examples
+## 例
 
-### Example 1: Safe vs Unsafe Error Handling
+### 例1：安全なエラー処理と危険なエラー処理
 
 ```typescript
-// BAD — leaks PHI in error
-throw new Error(`Patient ${patient.name} not found in ${patient.facility}`);
+// 悪い例 — エラー内でPHIが漏洩している
+throw new Error(`患者 ${patient.name} が施設 ${patient.facility} で見つかりません`);
 
-// GOOD — generic error, details logged server-side with opaque IDs only
-logger.error('Patient lookup failed', { recordId: patient.id, facilityId });
-throw new Error('Record not found');
+// 良い例 — 一般的なエラーを返し、サーバー側で不透明なIDのみを用いて詳細をログ出力する
+logger.error('患者の検索に失敗しました', { recordId: patient.id, facilityId });
+throw new Error('レコードが見つかりません');
 ```
 
-### Example 2: RLS Policy for Multi-Facility Isolation
+### 例2：複数施設隔離のためのRLSポリシー
 
 ```sql
--- Doctor at Facility A cannot see Facility B patients
+-- 施設Aの医師は、施設Bの患者情報を閲覧できないようにする
 CREATE POLICY "facility_isolation"
   ON patients FOR SELECT TO authenticated
   USING (facility_id IN (
     SELECT facility_id FROM staff_assignments WHERE user_id = auth.uid()
   ));
 
--- Test: login as doctor-facility-a, query facility-b patients
--- Expected: 0 rows returned
+-- 検証: 施設Aの医師としてログインし、施設Bの患者をクエリする
+-- 期待値: 0行が返されること
 ```
 
-### Example 3: Safe Logging
+### 例3：安全なログ出力
 
 ```typescript
-// BAD — logs identifiable patient data
-console.log('Processing patient:', patient);
+// 悪い例 — 特定可能な患者データをログ出力している
+console.log('患者を処理中:', patient);
 
-// GOOD — logs only opaque internal record ID
-console.log('Processing record:', patient.id);
-// Note: even patient.id should be an opaque UUID, not a medical record number
+// 良い例 — 不透明な内部レコードIDのみを出力している
+console.log('レコードを処理中:', patient.id);
+// 注意: patient.id 自体もカルテ番号ではなく、不透明なUUIDであるべきです
 ```

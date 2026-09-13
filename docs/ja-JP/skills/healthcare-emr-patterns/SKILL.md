@@ -1,159 +1,159 @@
 ---
 name: healthcare-emr-patterns
-description: 電子医療記録（EMR）パターン、相互運用性、およびHL7/FHIR統合。
+description: 電子医療記録（EMR）パターン、相互 interoperability（相互運用性）、およびHL7/FHIR統合。
 origin: Health1 Super Speciality Hospitals — contributed by Dr. Keyur Patel
 version: "1.0.0"
 ---
 
-# Healthcare EMR Development Patterns
+# ヘルスケアEMR開発パターン
 
-Patterns for building Electronic Medical Record (EMR) and Electronic Health Record (EHR) systems. Prioritizes patient safety, clinical accuracy, and practitioner efficiency.
+電子カルテ（EMR: Electronic Medical Record）および電子健康記録（EHR: Electronic Health Record）システムを構築するためのパターン。患者の安全、臨床的な正確性、および医療従事者の効率性を最優先します。
 
-## When to Use
+## いつ使用するか
 
-- Building patient encounter workflows (complaint, exam, diagnosis, prescription)
-- Implementing clinical note-taking (structured + free text + voice-to-text)
-- Designing prescription/medication modules with drug interaction checking
-- Integrating Clinical Decision Support Systems (CDSS)
-- Building lab result displays with reference range highlighting
-- Implementing audit trails for clinical data
-- Designing healthcare-accessible UIs for clinical data entry
+- 患者の診察ワークフロー（主訴、検査、診断、処方）の構築
+- 臨床記録（構造化データ＋フリーテキスト＋音声入力）の実装
+- 相互作用チェック機能付きの処方・服薬管理モジュールの設計
+- 臨床意思決定支援システム（CDSS）の統合
+- 基準値ハイライト機能付きの検査結果表示機能の構築
+- 臨床データの監査証跡（オーディットトレイル）の実装
+- 医療従事者が入力しやすい、アクセシビリティに配慮したUIの設計
 
-## How It Works
+## 動作方法
 
-### Patient Safety First
+### 患者の安全第一
 
-Every design decision must be evaluated against: "Could this harm a patient?"
+すべての設計上の決定は、「これにより患者に危害が及ぶ可能性はないか？」という基準で評価されなければなりません。
 
-- Drug interactions MUST alert, not silently pass
-- Abnormal lab values MUST be visually flagged
-- Critical vitals MUST trigger escalation workflows
-- No clinical data modification without audit trail
+- 薬物相互作用は、サイレントに無視するのではなく、必ずアラートを表示しなければなりません。
+- 異常な検査値は、視覚的にフラグを立てなければなりません。
+- 危険なバイタルサインは、エスカレーション・ワークフローを自動的にトリガーしなければなりません。
+- 監査証跡なしでの臨床データの変更は許可されません。
 
-### Single-Page Encounter Flow
+### 1ページ診察フロー
 
-Clinical encounters should flow vertically on a single page — no tab switching:
+臨床の診察は、タブの切り替えをなくし、1ページで縦方向に流れるように設計されるべきです：
 
 ```
-Patient Header (sticky — always visible)
-├── Demographics, allergies, active medications
+患者ヘッダー（固定表示 — 常に表示）
+└── 基本情報、アレルギー、現在服用中の薬
 │
-Encounter Flow (vertical scroll)
-├── 1. Chief Complaint (structured templates + free text)
-├── 2. History of Present Illness
-├── 3. Physical Examination (system-wise)
-├── 4. Vitals (auto-trigger clinical scoring)
-├── 5. Diagnosis (ICD-10/SNOMED search)
-├── 6. Medications (drug DB + interaction check)
-├── 7. Investigations (lab/radiology orders)
-├── 8. Plan & Follow-up
-└── 9. Sign / Lock / Print
+診察フロー（垂直スクロール）
+├── 1. 主訴（構造化テンプレート ＋ フリーテキスト）
+├── 2. 現病歴（HPI）
+├── 3. 身体診察（系統別）
+├── 4. バイタルサイン（臨床スコアを自動トリガー）
+├── 5. 診断（ICD-10/SNOMED検索）
+├── 6. 処方（医薬品データベース ＋ 相互作用チェック）
+├── 7. 検査オーダー（検体検査/放射線検査）
+├── 8. 治療計画 ＋ フォローアップ
+└── 9. 署名 / ロック / 印刷
 ```
 
-### Smart Template System
+### スマートテンプレートシステム
 
 ```typescript
 interface ClinicalTemplate {
   id: string;
-  name: string;             // e.g., "Chest Pain"
-  chips: string[];          // clickable symptom chips
-  requiredFields: string[]; // mandatory data points
-  redFlags: string[];       // triggers non-dismissable alert
-  icdSuggestions: string[]; // pre-mapped diagnosis codes
+  name: string;             // 例: "胸痛"
+  chips: string[];          // クリック可能な症状チップ
+  requiredFields: string[]; // 必須入力項目
+  redFlags: string[];       // 却下不可能なアラートをトリガーする項目
+  icdSuggestions: string[]; // 事前にマッピングされた診断コード
 }
 ```
 
-Red flags in any template must trigger a visible, non-dismissable alert — NOT a toast notification.
+テンプレート内のレッドフラグ（危険信号）は、トースト通知ではなく、画面上に残り続ける却下不可能なアラートをトリガーしなければなりません。
 
-### Medication Safety Pattern
-
-```
-User selects drug
-  → Check current medications for interactions
-  → Check encounter medications for interactions
-  → Check patient allergies
-  → Validate dose against weight/age/renal function
-  → If CRITICAL interaction: BLOCK prescribing entirely
-  → Clinician must document override reason to proceed past a block
-  → If MAJOR interaction: display warning, require acknowledgment
-  → Log all alerts and override reasons in audit trail
-```
-
-Critical interactions **block prescribing by default**. The clinician must explicitly override with a documented reason stored in the audit trail. The system never silently allows a critical interaction.
-
-### Locked Encounter Pattern
-
-Once a clinical encounter is signed:
-- No edits allowed — only an addendum (a separate linked record)
-- Both original and addendum appear in the patient timeline
-- Audit trail captures who signed, when, and any addendum records
-
-### UI Patterns for Clinical Data
-
-**Vitals Display:** Current values with normal range highlighting (green/yellow/red), trend arrows vs previous, clinical scoring auto-calculated (NEWS2, qSOFA), escalation guidance inline.
-
-**Lab Results Display:** Normal range highlighting, previous value comparison, critical values with non-dismissable alert, collection/analysis timestamps, pending orders with expected turnaround.
-
-**Prescription PDF:** One-click generation with patient demographics, allergies, diagnosis, drug details (generic + brand, dose, route, frequency, duration), clinician signature block.
-
-### Accessibility for Healthcare
-
-Healthcare UIs have stricter requirements than typical web apps:
-- 4.5:1 minimum contrast (WCAG AA) — clinicians work in varied lighting
-- Large touch targets (44x44px minimum) — for gloved/rushed interaction
-- Keyboard navigation — for power users entering data rapidly
-- No color-only indicators — always pair color with text/icon (colorblind clinicians)
-- Screen reader labels on all form fields
-- No auto-dismissing toasts for clinical alerts — clinician must actively acknowledge
-
-### Anti-Patterns
-
-- Storing clinical data in browser localStorage
-- Silent failures in drug interaction checking
-- Dismissable toasts for critical clinical alerts
-- Tab-based encounter UIs that fragment the clinical workflow
-- Allowing edits to signed/locked encounters
-- Displaying clinical data without audit trail
-- Using `any` type for clinical data structures
-
-## Examples
-
-### Example 1: Patient Encounter Flow
+### 服薬安全パターン
 
 ```
-Doctor opens encounter for Patient #4521
-  → Sticky header shows: "Rajesh M, 58M, Allergies: Penicillin, Active Meds: Metformin 500mg"
-  → Chief Complaint: selects "Chest Pain" template
-    → Clicks chips: "substernal", "radiating to left arm", "crushing"
-    → Red flag "crushing substernal chest pain" triggers non-dismissable alert
-  → Examination: CVS system — "S1 S2 normal, no murmur"
-  → Vitals: HR 110, BP 90/60, SpO2 94%
-    → NEWS2 auto-calculates: score 8, risk HIGH, escalation alert shown
-  → Diagnosis: searches "ACS" → selects ICD-10 I21.9
-  → Medications: selects Aspirin 300mg
-    → CDSS checks against Metformin: no interaction
-  → Signs encounter → locked, addendum-only from this point
+ユーザーが薬を選択
+  → 現在の服用薬との相互作用を確認
+  → 今回の診察で処方された薬との相互作用を確認
+  → 患者のアレルギーを確認
+  → 体重・年齢・腎機能に基づいて投与量を検証
+  → 「深刻な（CRITICAL）」相互作用の場合：処方を完全にブロック
+  → 医師が処方を進めるには、ブロックを解除するためのオーバーライド理由を入力する必要がある
+  → 「主要な（MAJOR）」相互作用の場合：警告バナーを表示し、確認入力を求める
+  → すべてのアラートとオーバーライドの理由を監査証跡に記録
 ```
 
-### Example 2: Medication Safety Workflow
+深刻な（CRITICAL）相互作用は、**デフォルトで処方をブロック**します。医師は、監査証跡に保存されるオーバーライド理由を明示的に入力して進める必要があります。システムが深刻な相互作用をサイレントに許可することは決してありません。
+
+### 診察記録のロックパターン
+
+診察記録に署名（サイン）が完了した後は：
+- 編集は一切不可 — アデンダム（別個にリンクされた追記レコード）のみ許可
+- オリジナルの記録とアデンダムの両方が患者のタイムラインに表示される
+- 監査証跡は、誰がいつ署名したか、およびすべてのアデンダム記録を補足する
+
+### 臨床データ向けUIパターン
+
+**バイタル表示:** 基準値に応じたハイライト（緑/黄/赤）、前回値との比較傾向、臨床スコアの自動計算（NEWS2, qSOFA）、インラインでのエスカレーションガイダンス。
+
+**検査結果表示:** 基準値のハイライト、前回値との比較、クリティカル値に対する却下不可のアラート、採取/分析日時、結果待ちオーダーの予想所要時間。
+
+**処方箋PDF:** 患者基本情報、アレルギー、診断、処方薬の詳細（一般名 ＋ 商品名、投与量、投与経路、頻度、期間）、医師の署名欄を含む、ワンクリックでのPDF生成。
+
+### 医療向けアクセシビリティ
+
+医療用UIには、一般的なWebアプリよりも厳しい要件が求められます：
+- 4.5:1 以上のコントラスト（WCAG AA） — 医師は様々な照明環境で機能します。
+- 大きなタッチターゲット（最小 44x44px） — 手袋着用時や急いでいる時の操作用。
+- キーボード操作 — データを素早く入力するパワーユーザー用。
+- 色だけに頼らないインジケーター — 色とテキスト/アイコンを常に組み合わせる（色覚特性を持つ医師への配慮）。
+- すべての入力フィールドにスクリーンリーダー用ラベルを設置。
+- 臨床アラートに対する自動消滅トーストの禁止 — 医師が能動的に確認動作を行う必要がある。
+
+### 避けるべきアンチパターン
+
+- ブラウザの localStorage への臨床データの保存
+- 薬物相互作用チェックのサイレントな失敗
+- 重要な臨床アラートに対する消滅可能なトースト通知の使用
+- 臨床ワークフローを断片化させるタブ形式の診察UI
+- 署名/ロックされた診察記録の編集の許可
+- 監査証跡のない臨床データの表示
+- 臨床データ構造に対する `any` 型の使用
+
+## 例
+
+### 例1：患者の診察フロー
 
 ```
-Doctor prescribes Warfarin for Patient #4521
-  → CDSS detects: Warfarin + Aspirin = CRITICAL interaction
-  → UI: red non-dismissable modal blocks prescribing
-  → Doctor clicks "Override with reason"
-  → Types: "Benefits outweigh risks — monitored INR protocol"
-  → Override reason + alert stored in audit trail
-  → Prescription proceeds with documented override
+医師が患者 #4521 の診察を開始
+  → 固定ヘッダーに表示: "Rajesh M, 58歳男性, アレルギー: ペニシリン, 服用中の薬: メトホルミン 500mg"
+  → 主訴: "胸痛" テンプレートを選択
+    → チップをクリック: "胸骨後部", "左腕への放散", "圧迫感"
+    → レッドフラグ「胸骨後部の圧迫感を伴う胸痛」が却下不可のアラートをトリガー
+  → 検査: 循環器系 — "S1 S2 整、雑音なし"
+  → バイタル: 心拍数 110, 血圧 90/60, SpO2 94%
+    → NEWS2が自動計算され: スコア 8、リスク「高」、エスカレーション警告が表示される
+  → 診断: "ACS" を検索 → ICD-10 I21.9 を選択
+  → 処方: アスピリン 300mg を選択
+    → CDSSがメトホルミンとの相互作用を確認: 相互作用なし
+  → 診察記録に署名 → ロックされ、これ以降はアデンダム（追記）のみ可能
 ```
 
-### Example 3: Locked Encounter + Addendum
+### 例2：服薬安全ワークフロー
 
 ```
-Encounter #E-2024-0891 signed by Dr. Shah at 14:30
-  → All fields locked — no edit buttons visible
-  → "Add Addendum" button available
-  → Dr. Shah clicks addendum, adds: "Lab results received — Troponin elevated"
-  → New record E-2024-0891-A1 linked to original
-  → Timeline shows both: original encounter + addendum with timestamps
+医師が患者 #4521 にワルファリンを処方
+  → CDSSが検出: ワルファリン ＋ アスピリン ＝ 深刻な（CRITICAL）相互作用
+  → UI: 赤色の却下不可モーダルが処方をブロック
+  → 医師が「理由を入力してオーバーライド」をクリック
+  → 入力: "リスクを上回るメリット — INRのモニタリングプロトコルで対応"
+  → オーバーライドの理由 ＋ アラート情報が監査証跡に保存される
+  → 記録されたオーバーライドをもって処方が進行
+```
+
+### 例3：ロックされた診察記録 ＋ アデンダム（追記）
+
+```
+診察記録 #E-2024-0891 に Dr. Shah が 14:30 に署名
+  → すべてのフィールドがロック — 編集ボタンが非表示に
+  → 「追記（アデンダム）を追加」ボタンが利用可能になる
+  → Dr. Shah がクリックし追記: "検査結果受信 — トロポニン上昇"
+  → オリジナルの診察記録にリンクされた新しいレコード E-2024-0891-A1 が作成される
+  → タイムラインに両方（オリジナルの診察記録 ＋ タイムスタンプ付きの追記）が表示される
 ```

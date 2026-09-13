@@ -4,122 +4,120 @@ description: API、エージェント、およびLLMエンドポイントのア�
 origin: community
 ---
 
-# GateGuard — Fact-Forcing Pre-Action Gate
+# GateGuard — 事実強制型プリアクションゲート
 
-A PreToolUse hook that forces Claude to investigate before editing. Instead of self-evaluation ("are you sure?"), it demands concrete facts. The act of investigation creates awareness that self-evaluation never did.
+Claudeが編集前に調査を強制するPreToolUseフック。自己評価（「本当にいいですか？」）の代わりに、具体的な事実を要求する。調査行為そのものが、自己評価では得られなかった認識を生み出す。
 
-## When to Activate
+## いつ使用するか
 
-- Working on any codebase where file edits affect multiple modules
-- Projects with data files that have specific schemas or date formats
-- Teams where AI-generated code must match existing patterns
-- Any workflow where Claude tends to guess instead of investigating
+- ファイル編集が複数モジュールに影響するコードベースで作業する場合
+- 特定のスキーマや日付形式を持つデータファイルがあるプロジェクト
+- AI生成コードが既存パターンに一致する必要があるチーム
+- Claudeが調査せずに推測する傾向があるワークフロー
 
-## Core Concept
+## 基本コンセプト
 
-LLM self-evaluation doesn't work. Ask "did you violate any policies?" and the answer is always "no." This is verified experimentally.
+LLMの自己評価は機能しない。「ポリシーに違反しましたか？」と聞けば、答えは常に「いいえ」。これは実験的に検証済み。
 
-But asking "list every file that imports this module" forces the LLM to run Grep and Read. The investigation itself creates context that changes the output.
+しかし「このモジュールをインポートするすべてのファイルをリストせよ」と求めると、LLMはGrepとReadを実行せざるを得ない。調査そのものが出力を変えるコンテキストを生み出す。
 
-**Three-stage gate:**
+**3段階ゲート：**
 
 ```
-1. DENY  — block the first Edit/Write/Bash attempt
-2. FORCE — tell the model exactly which facts to gather
-3. ALLOW — permit retry after facts are presented
+1. DENY  — 最初のEdit/Write/Bash試行をブロック
+2. FORCE — モデルに収集すべき正確な事実を指示
+3. ALLOW — 事実が提示された後にリトライを許可
 ```
 
-No competitor does all three. Most stop at deny.
+3つ全てを行う競合製品はない。ほとんどはdenyで止まる。
 
-## Evidence
+## エビデンス
 
-Two independent A/B tests, identical agents, same task:
+2つの独立したA/Bテスト、同一のエージェント、同じタスク：
 
-| Task | Gated | Ungated | Gap |
+| タスク | ゲート有り | ゲート無し | 差分 |
 | --- | --- | --- | --- |
-| Analytics module | 8.0/10 | 6.5/10 | +1.5 |
-| Webhook validator | 10.0/10 | 7.0/10 | +3.0 |
-| **Average** | **9.0** | **6.75** | **+2.25** |
+| 分析モジュール | 8.0/10 | 6.5/10 | +1.5 |
+| Webhookバリデーター | 10.0/10 | 7.0/10 | +3.0 |
+| **平均** | **9.0** | **6.75** | **+2.25** |
 
-Both agents produce code that runs and passes tests. The difference is design depth.
+両エージェントとも動作しテストに合格するコードを生成する。違いは設計の深さにある。
 
-## Gate Types
+## ゲートタイプ
 
-### Edit / MultiEdit Gate (first edit per file)
+### Edit / MultiEditゲート（ファイルごとの最初の編集）
 
-MultiEdit is handled identically — each file in the batch is gated individually.
-
-```
-Before editing {file_path}, present these facts:
-
-1. List ALL files that import/require this file (search the tree — Glob/Grep, or find/grep via Bash)
-2. List the public functions/classes affected by this change
-3. If this file reads/writes data files, show field names, structure,
-   and date format (use redacted or synthetic values, not raw production data)
-4. Quote the user's current instruction verbatim
-```
-
-### Write Gate (first new file creation)
+MultiEditも同様に処理される — バッチ内の各ファイルが個別にゲートされる。
 
 ```
-Before creating {file_path}, present these facts:
+{file_path} を編集する前に、以下の事実を提示してください：
 
-1. Name the file(s) and line(s) that will call this new file
-2. Confirm no existing file serves the same purpose (search the tree — Glob/Grep, or find/grep via Bash)
-3. If this file reads/writes data files, show field names, structure,
-   and date format (use redacted or synthetic values, not raw production data)
-4. Quote the user's current instruction verbatim
+1. このファイルをimport/requireするすべてのファイルをリスト（ツリーを検索 — Glob/Grep、またはfind/grep via Bash）
+2. この変更の影響を受けるpublic関数/クラスをリスト
+3. このファイルがデータファイルを読み書きする場合、フィールド名、構造、
+   日付形式を表示（本番データではなく、編集済みまたは合成値を使用）
+4. ユーザーの現在の指示をそのまま引用
 ```
 
-### Destructive Bash Gate (every destructive command)
-
-Triggers on: `rm -rf`, `git reset --hard`, `git push --force`, `drop table`, etc.
+### Writeゲート（最初の新規ファイル作成）
 
 ```
-1. List all files/data this command will modify or delete
-2. Write a one-line rollback procedure
-3. Quote the user's current instruction verbatim
+{file_path} を作成する前に、以下の事実を提示してください：
+
+1. この新しいファイルを呼び出すファイルと行を指定
+2. 同じ目的を果たす既存ファイルがないことを確認（ツリーを検索 — Glob/Grep、またはfind/grep via Bash）
+3. このファイルがデータファイルを読み書きする場合、フィールド名、構造、
+   日付形式を表示（本番データではなく、編集済みまたは合成値を使用）
+4. ユーザーの現在の指示をそのまま引用
 ```
 
-### Routine Bash Gate (once per session)
+### 破壊的Bashゲート（すべての破壊的コマンド）
+
+トリガー：`rm -rf`、`git reset --hard`、`git push --force`、`drop table` など。
 
 ```
-1. The current user request in one sentence
-2. What this specific command verifies or produces
+1. このコマンドが変更または削除するすべてのファイル/データをリスト
+2. 1行のロールバック手順を記述
+3. ユーザーの現在の指示をそのまま引用
 ```
 
-## Quick Start
+### ルーティンBashゲート（セッションごとに1回）
 
-### Option A: Use the ECC hook (zero install)
+```
+1. 現在のユーザーリクエストを1文で
+2. この特定のコマンドが検証または生成するもの
+```
 
-The hook at `scripts/hooks/gateguard-fact-force.js` is included in this plugin. Enable it via hooks.json.
+## クイックスタート
 
-If GateGuard blocks setup or repair work, start the session with
-`ECC_GATEGUARD=off`. For hook-level control, keep using
-`ECC_DISABLED_HOOKS` with the GateGuard hook ID.
+### オプションA: ECCフックを使用（インストール不要）
 
-### Option B: Full package with config
+`scripts/hooks/gateguard-fact-force.js` のフックはこのプラグインに含まれている。hooks.jsonで有効化する。
+
+GateGuardがセットアップや修復作業をブロックする場合、`ECC_GATEGUARD=off` でセッションを開始する。フックレベルの制御には、GateGuardフックIDで `ECC_DISABLED_HOOKS` を引き続き使用する。
+
+### オプションB: 設定付きフルパッケージ
 
 ```bash
 pip install gateguard-ai
 gateguard init
 ```
 
-This adds `.gateguard.yml` for per-project configuration (custom messages, ignore paths, gate toggles).
+これによりプロジェクトごとの設定用の `.gateguard.yml` が追加される（カスタムメッセージ、除外パス、ゲートトグル）。
 
-## Anti-Patterns
+## アンチパターン
 
-- **Don't use self-evaluation instead.** "Are you sure?" always gets "yes." This is experimentally verified.
-- **Don't skip the data schema check.** Both A/B test agents assumed ISO-8601 dates when real data used `%Y/%m/%d %H:%M`. Checking data structure (with redacted values) prevents this entire class of bugs.
-- **Don't gate every single Bash command.** Routine bash gates once per session. Destructive bash gates every time. This balance avoids slowdown while catching real risks.
+- **代わりに自己評価を使わない。** 「本当にいいですか？」は常に「はい」と返ってくる。これは実験的に検証済み。
+- **データスキーマチェックをスキップしない。** 両A/Bテストのエージェントは、実際のデータが `%Y/%m/%d %H:%M` を使用しているにもかかわらずISO-8601の日付を想定した。データ構造のチェック（編集済み値を使用）は、このクラスのバグ全体を防止する。
+- **すべてのBashコマンドをゲートしない。** ルーティンBashゲートはセッションごとに1回。破壊的Bashゲートは毎回。このバランスにより、実際のリスクを捕捉しながらスローダウンを回避する。
 
-## Best Practices
+## ベストプラクティス
 
-- Let the gate fire naturally. Don't try to pre-answer the gate questions — the investigation itself is what improves quality.
-- Customize gate messages for your domain. If your project has specific conventions, add them to the gate prompts.
-- Use `.gateguard.yml` to ignore paths like `.venv/`, `node_modules/`, `.git/`.
+- ゲートを自然に発動させる。ゲートの質問に事前に回答しようとしない — 調査そのものが品質を向上させるもの。
+- ドメインに合わせてゲートメッセージをカスタマイズする。プロジェクトに特定の規約がある場合、ゲートプロンプトに追加する。
+- `.gateguard.yml` を使用して `.venv/`、`node_modules/`、`.git/` などのパスを除外する。
 
-## Related Skills
+## 関連スキル
 
-- `safety-guard` — Runtime safety checks (complementary, not overlapping)
-- `code-reviewer` — Post-edit review (GateGuard is pre-edit investigation)
+- `safety-guard` — ランタイムセーフティチェック（補完的、重複なし）
+- `code-reviewer` — 編集後のレビュー（GateGuardは編集前の調査）
