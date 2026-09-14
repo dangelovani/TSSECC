@@ -179,9 +179,12 @@ async function main() {
           const $ = createFailingShell()
           const hooks = await ECCHooksPlugin({ client, $, directory: projectDir })
 
-          const env = await hooks["shell.env"]()
+          const output = { env: { EXISTING_ENV: "preserved" } }
+          await hooks["shell.env"]({ cwd: projectDir }, output)
+          const { env } = output
 
           assert.deepStrictEqual($.calls, [], `Unexpected shell probes: ${$.calls.join(", ")}`)
+          assert.strictEqual(env.EXISTING_ENV, "preserved")
           assert.strictEqual(env.PROJECT_ROOT, projectDir)
           assert.strictEqual(env.PACKAGE_MANAGER, "pnpm")
           assert.strictEqual(env.DETECTED_LANGUAGES, "typescript,python")
@@ -243,9 +246,12 @@ async function main() {
           const $ = createFailingShell()
           const hooks = await ECCHooksPlugin({ client, $, directory: projectDir })
 
-          const env = await hooks["shell.env"]()
+          const output = { env: {} }
+          await hooks["shell.env"]({ cwd: projectDir }, output)
+          const { env } = output
 
           assert.deepStrictEqual($.calls, [], `Unexpected shell probes: ${$.calls.join(", ")}`)
+          assert.strictEqual(env.PROJECT_ROOT, projectDir)
           assert.ok(!("PACKAGE_MANAGER" in env), "Lockfile directory should not set PACKAGE_MANAGER")
           assert.ok(!("DETECTED_LANGUAGES" in env), "Marker directory should not set DETECTED_LANGUAGES")
           assert.ok(!("PRIMARY_LANGUAGE" in env), "Marker directory should not set PRIMARY_LANGUAGE")
@@ -253,6 +259,27 @@ async function main() {
           fs.rmSync(projectDir, { recursive: true, force: true })
         }
       },
+    ],
+    [
+      "compacting appends ECC context without replacing the host compaction prompt",
+      async () => withTempProject([], async (projectDir) => {
+        const client = createClient()
+        const $ = createFailingShell()
+        const hooks = await ECCHooksPlugin({ client, $, directory: projectDir })
+        const output = { context: ["Existing plugin context"] }
+
+        await hooks["experimental.session.compacting"]({ sessionID: "session-1" }, output)
+
+        assert.strictEqual(output.context[0], "Existing plugin context")
+        const prompt = output.prompt ?? ["Default compaction prompt", ...output.context].join("\n\n")
+        assert.ok(prompt.includes("Default compaction prompt"))
+        assert.ok(prompt.includes("# ECC Context"))
+        assert.ok(prompt.includes("Current task status and progress"))
+        const customOutput = { context: [], prompt: "Another plugin's custom prompt" }
+        await hooks["experimental.session.compacting"]({ sessionID: "session-1" }, customOutput)
+        assert.strictEqual(customOutput.prompt, "Another plugin's custom prompt")
+        assert.deepStrictEqual($.calls, [])
+      }),
     ],
     [
       "permission.ask handles read-only tools correctly",
